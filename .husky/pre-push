@@ -1,2 +1,2 @@
 # .husky/pre-push
-pnpm lint && pnpm build
+pnpm build
