@@ -1,5 +1,10 @@
+import { Calendar } from '@widgets/calendar';
 import React from 'react';
 
 export const GatheringPage = () => {
-  return <div>모임페이지</div>;
+  return (
+    <div>
+      <Calendar />
+    </div>
+  );
 };
