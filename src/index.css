@@ -74,20 +74,20 @@ code {
 
 @font-face {
   font-family: 'Monography-Rounded';
-  src: url('shared/assets/fonts/monography/WOFF_EOT/Moneygraphy-Rounded.eot');
+  src: url('shared/config/assets/fonts/monography/WOFF_EOT/Moneygraphy-Rounded.eot');
   src:
-    url('shared/assets/fonts/monography/WOFF_EOT/Moneygraphy-Rounded.eot?#iefix') format('embedded-opentype'),
-    url('shared/assets/fonts/monography/WOFF_EOT/Moneygraphy-Rounded.woff2') format('woff2'),
-    url('shared/assets/fonts/monography/WOFF_EOT/Moneygraphy-Rounded.woff') format('woff'),
-    url('shared/assets/fonts/monography/TTF/Moneygraphy-Rounded.ttf') format('truetype');
+    url('shared/config/assets/fonts/monography/WOFF_EOT/Moneygraphy-Rounded.eot?#iefix') format('embedded-opentype'),
+    url('shared/config/assets/fonts/monography/WOFF_EOT/Moneygraphy-Rounded.woff2') format('woff2'),
+    url('shared/config/assets/fonts/monography/WOFF_EOT/Moneygraphy-Rounded.woff') format('woff'),
+    url('shared/config/assets/fonts/monography/TTF/Moneygraphy-Rounded.ttf') format('truetype');
 }
 
 @font-face {
   font-family: 'Monography-Pixel';
-  src: url('shared/assets/fonts/monography/WOFF_EOT/Moneygraphy-Pixel.eot');
+  src: url('shared/config/assets/fonts/monography/WOFF_EOT/Moneygraphy-Pixel.eot');
   src:
-    url('shared/assets/fonts/monography/WOFF_EOT/Moneygraphy-Pixel.eot?#iefix') format('embedded-opentype'),
-    url('shared/assets/fonts/monography/WOFF_EOT/Moneygraphy-Pixel.woff2') format('woff2'),
-    url('shared/assets/fonts/monography/WOFF_EOT/Moneygraphy-Pixel.woff') format('woff'),
-    url('shared/assets/fonts/monography/TTF/Moneygraphy-Pixel.ttf') format('truetype');
+    url('shared/config/assets/fonts/monography/WOFF_EOT/Moneygraphy-Pixel.eot?#iefix') format('embedded-opentype'),
+    url('shared/config/assets/fonts/monography/WOFF_EOT/Moneygraphy-Pixel.woff2') format('woff2'),
+    url('shared/config/assets/fonts/monography/WOFF_EOT/Moneygraphy-Pixel.woff') format('woff'),
+    url('shared/config/assets/fonts/monography/TTF/Moneygraphy-Pixel.ttf') format('truetype');
 }
