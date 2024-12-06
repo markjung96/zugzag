@@ -16,13 +16,7 @@ export const AppRouter = () => (
 );
 
 const RouteWrapper = (props: RouteType) => {
-  const { element, path, layout: Layout } = props;
+  const { element, path, ...rest } = props;
 
-  return Layout ? (
-    <Layout>
-      <Route path={path} element={path === '/*' ? <Navigate to="/" replace /> : element} />
-    </Layout>
-  ) : (
-    <Route path={path} element={path === '/*' ? <Navigate to="/" replace /> : element} />
-  );
+  return <Route index={true} path={path} element={path === '/*' ? <Navigate to="/" replace /> : element} {...rest} />;
 };

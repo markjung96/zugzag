@@ -4,7 +4,6 @@ export interface Route {
   name: string;
   path: string;
   element: React.ReactNode;
-  children?: Route[];
   layout?: React.ElementType;
 }
 

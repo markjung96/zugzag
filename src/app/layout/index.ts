@@ -1,1 +1,1 @@
-export { ThemeProvider } from './ui/theme-provider';
+export { LayoutDefault } from './ui/layout-default';
