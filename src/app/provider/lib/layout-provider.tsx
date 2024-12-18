@@ -8,7 +8,7 @@ interface LayoutProviderProps {
   children: React.ReactNode;
 }
 
-const LayoutProvider = ({ children }: LayoutProviderProps) => {
+export const LayoutProvider = ({ children }: LayoutProviderProps) => {
   const location = useLocation();
   const [Layout, setLayout] = useState<React.ElementType>(() => LayoutDefault);
 
@@ -28,8 +28,6 @@ const LayoutProvider = ({ children }: LayoutProviderProps) => {
 
   return <Layout>{children}</Layout>;
 };
-
-export default LayoutProvider;
 
 // 매칭된 라우트와 해당 레이아웃을 찾는 함수
 export const findMatchRoute = (path: string) => {

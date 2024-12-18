@@ -1,4 +1,5 @@
 import React, { lazy } from 'react';
+import { LayoutAuth } from '@app/layout'; // 기본 레이아웃
 
 export interface Route {
   name: string;
@@ -21,6 +22,7 @@ const commonRoutes: Route[] = [
     name: 'Gathering',
     path: '/gather-here',
     element: <GatheringPage />,
+    layout: LayoutAuth,
   },
 ];
 
