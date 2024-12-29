@@ -5,7 +5,7 @@ import { LayoutProvider, ThemeProvider } from './provider';
 function App() {
   return (
     <div className="App">
-      <ThemeProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <LayoutProvider>
           <AppRouter />
         </LayoutProvider>

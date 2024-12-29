@@ -1,6 +1,6 @@
 import React from 'react';
 import { Header } from './header';
-import { Footer } from 'react-day-picker';
+import { Footer } from './footer';
 
 interface LayoutDefaultProps {
   children: React.ReactNode;

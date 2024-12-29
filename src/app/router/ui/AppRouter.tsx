@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { routes } from '../config/routes';
-import { ContainerLoading } from '@/shared';
+import { ContainerLoading } from '@shared/ui';
 
 export const AppRouter = () => (
   <Suspense fallback={<ContainerLoading />}>
