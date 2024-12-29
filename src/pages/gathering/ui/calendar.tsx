@@ -109,17 +109,6 @@ const Calendar = ({ onDateSelect, meetings = {} }: CalendarProps) => {
     setIsDragging(true);
   };
 
-  const handleTouchMove = (e: TouchEvent) => {
-    if (!touchState || transitioning !== 0) return;
-
-    setTouchState((prev) => ({
-      ...prev!,
-      currentX: e.touches[0].clientX,
-    }));
-
-    e.preventDefault();
-  };
-
   const handleTouchEnd = () => {
     if (!touchState) return;
 
@@ -139,6 +128,14 @@ const Calendar = ({ onDateSelect, meetings = {} }: CalendarProps) => {
 
     setTouchState(null);
     setIsDragging(false);
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    if (!touchState || transitioning !== 0) return;
+    setTouchState((prev) => ({
+      ...prev!,
+      currentX: e.touches[0].clientX,
+    }));
   };
 
   const getDragOffset = () => {
@@ -263,7 +260,7 @@ const Calendar = ({ onDateSelect, meetings = {} }: CalendarProps) => {
           onTouchEnd={handleTouchEnd}
         >
           {/* 이전 달 */}
-          <div className="absolute w-full" style={getTransformStyle(-1)}>
+          <div className="absolute w-full" style={getTransformStyle(1)}>
             {renderCalendarGrid(prevMonthData)}
           </div>
           {/* 현재 달 */}
@@ -271,7 +268,7 @@ const Calendar = ({ onDateSelect, meetings = {} }: CalendarProps) => {
             {renderCalendarGrid(currentMonthData)}
           </div>
           {/* 다음 달 */}
-          <div className="absolute w-full" style={getTransformStyle(1)}>
+          <div className="absolute w-full" style={getTransformStyle(-1)}>
             {renderCalendarGrid(nextMonthData)}
           </div>
         </div>

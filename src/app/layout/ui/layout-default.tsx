@@ -7,10 +7,9 @@ interface LayoutDefaultProps {
 }
 export const LayoutDefault: React.FC<LayoutDefaultProps> = ({ children }) => {
   return (
-    <div>
+    <div className="min-h-screen max-w-xl flex flex-col">
       <Header />
-      Default Layout
-      {children}
+      <main className="flex-grow">{children}</main>
       <Footer />
     </div>
   );
