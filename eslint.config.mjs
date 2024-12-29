@@ -32,7 +32,17 @@ export default [
       ...tsPlugin.configs.recommended.rules, // TypeScript 추천 규칙
       ...reactPlugin.configs.recommended.rules, // React 추천 규칙
       ...prettierConfig.rules, // Prettier 추천 규칙
-      'no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          vars: 'all',
+          args: 'after-used',
+          ignoreRestSiblings: true,
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+      'no-unused-vars': 'off',
       'no-console': 'warn',
       eqeqeq: ['error', 'always'],
       '@typescript-eslint/no-explicit-any': 'off',

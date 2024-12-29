@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 
 import './index.css';
-import * as serviceWorkerRegistration from './service-worker-registration';
 
 import App from './app/App';
 import reportWebVitals from './app/reportWebVitals';
@@ -22,4 +21,15 @@ root.render(
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
 
-serviceWorkerRegistration.register();
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/service-worker.js')
+      .then((_registration) => {
+        console.log('SW registered');
+      })
+      .catch((_registrationError) => {
+        console.log('SW registration failed');
+      });
+  });
+}
