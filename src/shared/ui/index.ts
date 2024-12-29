@@ -19,3 +19,5 @@ export {
   DropdownMenuRadioGroup,
 } from './dropdown-menu';
 export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption } from './table';
+export { DatePickerWithRange } from './date-picker';
+export { buttonVariants } from './button';

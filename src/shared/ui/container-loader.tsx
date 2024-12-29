@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { Loader, RefreshCw } from 'lucide-react';
-import { Button } from '@/widgets';
+import { Button } from '.';
 
 let timeout: any;
 

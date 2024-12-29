@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { DatePickerWithRange } from '@shared/ui/date-picker';
-import { Calendar } from '@/widgets';
+import { DatePickerWithRange } from '@shared/ui';
+import { Calendar } from '@shared/ui';
 
 export const GatheringPage = () => {
   return (
