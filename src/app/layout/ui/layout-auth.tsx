@@ -7,10 +7,10 @@ interface LayoutAuthProps {
 }
 export const LayoutAuth: React.FC<LayoutAuthProps> = ({ children }) => {
   return (
-    <div className="">
+    <div className="min-h-screen max-w-xl flex flex-col">
       <Header />
       Layout Needs auth
-      <main>{children}</main>
+      <main className="flex-grow">{children}</main>
       <Footer />
     </div>
   );
