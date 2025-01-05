@@ -21,3 +21,16 @@ export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableC
 export { buttonVariants } from './button';
 export { ModeToggle } from './mode-toggle';
 export { ContainerLoading } from './container-loader';
+export { Card, CardContent, CardHeader, CardFooter, CardTitle } from './card';
+export { Badge } from './badge';
+export { Avatar, AvatarFallback, AvatarImage } from './avatar';
+export {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './alert-dialog';
