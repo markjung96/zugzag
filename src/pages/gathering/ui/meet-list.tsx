@@ -3,6 +3,8 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Users, Clock, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
+
 import { Meeting, DailyMeetings } from '../mock';
 import MeetingFilters, { MeetingFilters as FilterOptions } from './meet-filter';
 
@@ -16,12 +18,18 @@ interface GroupedMeetings {
 }
 
 const MeetingList: React.FC<MeetingListProps> = ({ meetings, selectedDate }) => {
+  const navigate = useNavigate();
   const [groupedMeetings, setGroupedMeetings] = useState<GroupedMeetings>(meetings);
   const [filters, setFilters] = useState<FilterOptions>({
     gyms: [],
     showCrewOnly: false,
     showAvailableOnly: false,
   });
+
+  // 모임 클릭 핸들러
+  const handleMeetingClick = (meetingId: string) => {
+    navigate(`/gather-here/${meetingId}`);
+  };
 
   // 선택된 날짜와 필터를 적용하여 모임 필터링
   const getFilteredMeetings = () => {
@@ -136,7 +144,8 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, selectedDate }) => 
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            className="p-3 rounded-md bg-background border border-border hover:border-primary transition-colors"
+                            className="p-3 rounded-md bg-background border border-border hover:border-primary transition-colors cursor-pointer"
+                            onClick={() => handleMeetingClick(meeting.id)}
                           >
                             <div className="flex items-start justify-between">
                               <div>

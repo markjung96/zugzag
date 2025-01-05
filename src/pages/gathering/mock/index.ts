@@ -4,6 +4,7 @@ interface Attendance {
 }
 
 interface Meeting {
+  id: string;
   meetingName: string;
   climbingGym: string;
   date: Date;
@@ -19,6 +20,7 @@ type DailyMeetings = {
 const mockMeetingData: DailyMeetings = {
   '2024-12-01': [
     {
+      id: '1',
       meetingName: '토요일 아침 클라이밍',
       climbingGym: '클라이밍 파크',
       date: new Date('2024-12-01T09:00:00'),
@@ -32,6 +34,7 @@ const mockMeetingData: DailyMeetings = {
   ],
   '2024-12-03': [
     {
+      id: '2',
       meetingName: '크루 정기 모임',
       climbingGym: '더클라임',
       date: new Date('2024-12-03T19:00:00'),
@@ -43,6 +46,7 @@ const mockMeetingData: DailyMeetings = {
       },
     },
     {
+      id: '3',
       meetingName: '초보자 클라이밍',
       climbingGym: '더클라임',
       date: new Date('2024-12-03T15:00:00'),
@@ -56,6 +60,7 @@ const mockMeetingData: DailyMeetings = {
   ],
   '2024-12-07': [
     {
+      id: '4',
       meetingName: '볼더링 스터디',
       climbingGym: '클라이밍 랩',
       date: new Date('2024-12-07T14:00:00'),
@@ -69,6 +74,7 @@ const mockMeetingData: DailyMeetings = {
   ],
   '2024-12-10': [
     {
+      id: '5',
       meetingName: '크루 대회 준비',
       climbingGym: '클라이밍 파크',
       date: new Date('2024-12-10T18:00:00'),
@@ -82,6 +88,7 @@ const mockMeetingData: DailyMeetings = {
   ],
   '2024-12-15': [
     {
+      id: '6',
       meetingName: '주말 클라이밍',
       climbingGym: '더클라임',
       date: new Date('2024-12-15T11:00:00'),
@@ -95,6 +102,7 @@ const mockMeetingData: DailyMeetings = {
   ],
   '2024-12-20': [
     {
+      id: '7',
       meetingName: '크루 송년회',
       climbingGym: '클라이밍 랩',
       date: new Date('2024-12-20T19:00:00'),
