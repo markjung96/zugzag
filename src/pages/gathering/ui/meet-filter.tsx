@@ -15,6 +15,8 @@ export interface Meeting {
 interface MeetingFiltersProps {
   meetings: { [key: string]: Meeting[] };
   onFiltersChange: (filters: MeetingFilters) => void;
+  meetingId?: string; // 모임 ID 추가
+  onCreateMeeting?: (id: string) => void;
 }
 
 export interface MeetingFilters {
@@ -23,14 +25,19 @@ export interface MeetingFilters {
   showAvailableOnly: boolean;
 }
 
-const MeetingFilters: React.FC<MeetingFiltersProps> = ({ meetings, onFiltersChange }) => {
+const MeetingFilters: React.FC<MeetingFiltersProps> = ({ meetings, onFiltersChange, meetingId, onCreateMeeting }) => {
+  const handleCreateClick = () => {
+    if (meetingId && onCreateMeeting) {
+      onCreateMeeting(meetingId);
+      window.location.href = `/gather-here?id=${meetingId}`;
+    }
+  };
   const [filters, setFilters] = React.useState<MeetingFilters>({
     gyms: [],
     showCrewOnly: false,
     showAvailableOnly: false,
   });
 
-  // 모든 클라이밍장 목록 추출
   const allGyms = React.useMemo(() => {
     const gyms = new Set<string>();
     Object.values(meetings).forEach((dailyMeetings) => {
@@ -73,38 +80,46 @@ const MeetingFilters: React.FC<MeetingFiltersProps> = ({ meetings, onFiltersChan
 
   return (
     <div className="w-full space-y-4">
-      <div className="flex flex-wrap gap-4 items-center">
-        <select className="px-3 py-2 rounded-md border border-gray-300 bg-white" onChange={handleGymSelect} value="">
-          <option value="">클라이밍장 선택</option>
-          {allGyms.map((gym) => (
-            <option key={gym} value={gym} disabled={filters.gyms.includes(gym)}>
-              {gym}
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-wrap items-center justify-between">
+        <div className="flex flex-wrap gap-4 items-center">
+          <select className="px-3 py-2 rounded-md border border-gray-300 bg-white" onChange={handleGymSelect} value="">
+            <option value="">클라이밍장 선택</option>
+            {allGyms.map((gym) => (
+              <option key={gym} value={gym} disabled={filters.gyms.includes(gym)}>
+                {gym}
+              </option>
+            ))}
+          </select>
 
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={filters.showCrewOnly}
-            onChange={() => handleCheckboxChange('showCrewOnly')}
-            className="rounded border-gray-300"
-          />
-          <span className="text-sm">크루 모임만 보기</span>
-        </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={filters.showCrewOnly}
+              onChange={() => handleCheckboxChange('showCrewOnly')}
+              className="rounded border-gray-300"
+            />
+            <span className="text-sm">크루 모임만 보기</span>
+          </label>
 
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={filters.showAvailableOnly}
-            onChange={() => handleCheckboxChange('showAvailableOnly')}
-            className="rounded border-gray-300"
-          />
-          <span className="text-sm">참여 가능한 모임만 보기</span>
-        </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={filters.showAvailableOnly}
+              onChange={() => handleCheckboxChange('showAvailableOnly')}
+              className="rounded border-gray-300"
+            />
+            <span className="text-sm">참여 가능한 모임만 보기</span>
+          </label>
+        </div>
+
+        <button
+          onClick={handleCreateClick}
+          className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+        >
+          모임 만들기
+        </button>
       </div>
 
-      {/* 선택된 필터 표시 */}
       <div className="flex flex-wrap gap-2">
         {filters.gyms.map((gym) => (
           <span key={gym} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 text-sm">
