@@ -4,6 +4,7 @@ interface Attendance {
 }
 
 interface Meeting {
+  id: string;
   meetingName: string;
   climbingGym: string;
   date: Date;
@@ -16,4 +17,12 @@ type DailyMeetings = {
   [key: string]: Meeting[]; // key는 'YYYY-MM-DD' 형식
 };
 
-export type { Meeting, Attendance, DailyMeetings };
+interface CreateMeetingDto {
+  meetingName: string;
+  climbingGym: string;
+  date: Date;
+  isCrewMeeting: boolean;
+  maxParticipants: number | null;
+}
+
+export type { Meeting, Attendance, DailyMeetings, CreateMeetingDto };
