@@ -33,4 +33,4 @@ const Divider: React.FC<DividerProps> = ({ className = '', orientation = 'horizo
   );
 };
 
-export default Divider;
+export { Divider };

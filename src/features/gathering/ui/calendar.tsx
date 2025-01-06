@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useRef, TouchEvent } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, addMonths } from 'date-fns';
-import { DailyMeetings } from '../mock';
+import { DailyMeetings } from '@/entities/meet/meet-types';
+// import { DailyMeetings } from '../mock';
 
 interface CalendarProps {
   onDateSelect?: (date: Date | null) => void;

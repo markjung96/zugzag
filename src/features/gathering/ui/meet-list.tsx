@@ -5,8 +5,9 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 
-import { Meeting, DailyMeetings } from '../mock';
+// import { Meeting, DailyMeetings } from '../mock';
 import MeetingFilters, { MeetingFilters as FilterOptions } from './meet-filter';
+import { DailyMeetings, Meeting } from '@entities/meet/meet-types';
 
 interface MeetingListProps {
   meetings: DailyMeetings;
@@ -192,4 +193,4 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, selectedDate }) => 
   );
 };
 
-export default MeetingList;
+export { MeetingList };

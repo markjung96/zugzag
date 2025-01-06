@@ -1,16 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 
-export interface Meeting {
-  meetingName: string;
-  climbingGym: string;
-  date: Date;
-  isCrewMeeting: boolean;
-  maxParticipants: number | null;
-  attendance: {
-    confirmed: string[];
-  };
-}
+import { Meeting } from '@entities/meet/meet-types';
 
 interface MeetingFiltersProps {
   meetings: { [key: string]: Meeting[] };
