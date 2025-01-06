@@ -5,7 +5,7 @@ import GatheringItem from '@pages/gathering-item';
 import mockMeetingData from '@entities/meet/meet-mock';
 import { Calendar, Divider, MeetingList } from '@features/gathering';
 
-export const GatheringPage = () => {
+const GatheringPage = () => {
   const { id } = useParams(); // URL 파라미터에서 id 가져오기
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -26,3 +26,5 @@ export const GatheringPage = () => {
     </div>
   );
 };
+
+export default GatheringPage;
