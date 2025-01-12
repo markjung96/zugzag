@@ -1,9 +1,9 @@
-// eslint.config.js
-import tsParser from '@typescript-eslint/parser';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
-import reactPlugin from 'eslint-plugin-react';
-import prettierPlugin from 'eslint-plugin-prettier';
+import tsParser from '@typescript-eslint/parser';
 import prettierConfig from 'eslint-config-prettier';
+import importPlugin from 'eslint-plugin-import';
+import prettierPlugin from 'eslint-plugin-prettier';
+import reactPlugin from 'eslint-plugin-react';
 
 export default [
   {
@@ -11,10 +11,10 @@ export default [
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
-      parser: tsParser, // TypeScript parser 사용
+      parser: tsParser,
       parserOptions: {
         ecmaFeatures: {
-          jsx: true, // JSX 파싱 활성화
+          jsx: true,
         },
       },
     },
@@ -22,16 +22,45 @@ export default [
       '@typescript-eslint': tsPlugin,
       react: reactPlugin,
       prettier: prettierPlugin,
+      import: importPlugin,
     },
     settings: {
       react: {
-        version: 'detect', // React 버전 자동 감지
+        version: 'detect',
+      },
+      'import/resolver': {
+        typescript: true,
+        node: true,
       },
     },
     rules: {
-      ...tsPlugin.configs.recommended.rules, // TypeScript 추천 규칙
-      ...reactPlugin.configs.recommended.rules, // React 추천 규칙
-      ...prettierConfig.rules, // Prettier 추천 규칙
+      ...tsPlugin.configs.recommended.rules,
+      ...reactPlugin.configs.recommended.rules,
+      ...prettierConfig.rules,
+
+      // 타입 임포트 규칙 추가
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        {
+          prefer: 'type-imports',
+          fixStyle: 'inline-type-imports',
+        },
+      ],
+
+      // import 순서 규칙
+      'import/order': [
+        'error',
+        {
+          groups: ['builtin', 'external', 'internal', ['parent', 'sibling'], 'index', 'object', 'type'],
+          'newlines-between': 'always',
+          alphabetize: {
+            order: 'asc',
+            caseInsensitive: true,
+          },
+        },
+      ],
+
+      // 기존 규칙들
       '@typescript-eslint/no-unused-vars': [
         'warn',
         {
@@ -42,12 +71,13 @@ export default [
           varsIgnorePattern: '^_',
         },
       ],
+      'react/react-in-jsx-scope': 'off',
       'no-unused-vars': 'off',
       'no-console': 'warn',
       eqeqeq: ['error', 'always'],
       '@typescript-eslint/no-explicit-any': 'off',
       'react/prop-types': 'off',
-      'react/jsx-key': 'error', // Enforce `key` prop in iterators
+      'react/jsx-key': 'error',
     },
   },
 ];

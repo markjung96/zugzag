@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useMutation, useQuery, useQueryClient } from 'react-query';
+
 import { meetApi } from './meet-api';
-import { CreateMeetingDto } from '../model/meet-types';
+import { type CreateMeetingDto } from '../model/meet-types';
 
 const CACHE_TIME = {
   FIVE_MINUTES: 1000 * 60 * 5,

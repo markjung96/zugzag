@@ -25,4 +25,4 @@ interface CreateMeetingDto {
   maxParticipants: number | null;
 }
 
-export type { Meeting, Attendance, DailyMeetings, CreateMeetingDto };
+export type { Attendance, CreateMeetingDto, DailyMeetings, Meeting };

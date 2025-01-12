@@ -14,6 +14,7 @@
     "moduleResolution": "node", // 모듈 해석 방식 설정 (Node.js 방식)
     "resolveJsonModule": true, // JSON 모듈 임포트 허용
     "isolatedModules": true, // 각 파일을 독립적인 모듈로 컴파일
+    "verbatimModuleSyntax": true, // 모듈 구문을 그대로 유지
     "allowSyntheticDefaultImports": true, // 기본 내보내기가 없는 모듈을 기본 내보내기로 가져올 수 있도록 허용
     "declaration": true, // .d.ts 타입 선언 파일 생성
     "sourceMap": true, // 소스 맵 생성 (디버깅에 유용)
