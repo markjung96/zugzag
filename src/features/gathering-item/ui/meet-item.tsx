@@ -193,4 +193,4 @@ const MeetingItem: React.FC<MeetingItemProps> = ({ meeting, currentUserId, onEdi
   );
 };
 
-export default MeetingItem;
+export { MeetingItem };

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import GatheringItem from '@pages/gathering-item';
-import mockMeetingData from '@entities/meet/meet-mock';
 import { Calendar, Divider, MeetingList } from '@features/gathering';
+import mockMeetingData from '@entities/meet/api/meet-mock';
 
 const GatheringPage = () => {
   const { id } = useParams(); // URL 파라미터에서 id 가져오기

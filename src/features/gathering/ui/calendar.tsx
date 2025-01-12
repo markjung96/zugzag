@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, TouchEvent } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, addMonths } from 'date-fns';
-import { DailyMeetings } from '@/entities/meet/meet-types';
+import { DailyMeetings } from '@/entities/meet/model/meet-types';
 // import { DailyMeetings } from '../mock';
 
 interface CalendarProps {

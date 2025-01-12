@@ -5,9 +5,8 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 
-// import { Meeting, DailyMeetings } from '../mock';
 import MeetingFilters, { MeetingFilters as FilterOptions } from './meet-filter';
-import { DailyMeetings, Meeting } from '@entities/meet/meet-types';
+import { DailyMeetings, Meeting } from '@/entities/meet/model/meet-types';
 
 interface MeetingListProps {
   meetings: DailyMeetings;
@@ -119,6 +118,9 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, selectedDate }) => 
   };
 
   const filteredMeetings = getFilteredMeetings();
+  const isEmpty = Object.keys(filteredMeetings).length === 0;
+
+  console.log('isEmpty', isEmpty);
 
   return (
     <div className="space-y-4">
@@ -126,67 +128,82 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, selectedDate }) => 
 
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="space-y-4">
-          {Object.entries(filteredMeetings).map(([dateKey, dateMeetings]) => (
-            <div key={dateKey} className="rounded-lg border border-border bg-card">
-              <div className="px-4 py-2 border-b border-border bg-muted">
-                <h3 className="font-medium">{format(new Date(dateKey), 'M월 d일 (EEEE)', { locale: ko })}</h3>
+          {isEmpty ? (
+            <div className="rounded-lg border border-border bg-card p-8">
+              <div className="flex flex-col items-center justify-center text-center space-y-4">
+                <div className="space-y-2">
+                  <h3 className="font-medium text-lg">등록된 모임이 없습니다</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedDate
+                      ? '선택하신 날짜에 등록된 모임이 없습니다.'
+                      : '아직 등록된 모임이 없습니다. 새로운 모임을 만들어보세요!'}
+                  </p>
+                </div>
               </div>
-              <Droppable droppableId={dateKey}>
-                {(provided) => (
-                  <div {...provided.droppableProps} ref={provided.innerRef} className="p-2 space-y-2">
-                    {dateMeetings.map((meeting, index) => (
-                      <Draggable
-                        key={meeting.meetingName + meeting.date.toString()}
-                        draggableId={meeting.meetingName + meeting.date.toString()}
-                        index={index}
-                      >
-                        {(provided) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className="p-3 rounded-md bg-background border border-border hover:border-primary transition-colors cursor-pointer"
-                            onClick={() => handleMeetingClick(meeting.id)}
-                          >
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h4 className="font-medium">
-                                  {meeting.meetingName}
-                                  {meeting.isCrewMeeting && (
-                                    <span className="ml-2 inline-flex items-center rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                                      크루
-                                    </span>
-                                  )}
-                                </h4>
-                                <div className="mt-1 space-y-1 text-sm text-muted-foreground">
-                                  <div className="flex items-center gap-2">
-                                    <Clock className="h-4 w-4" />
-                                    <span>{format(meeting.date, 'a h:mm', { locale: ko })}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <MapPin className="h-4 w-4" />
-                                    <span>{meeting.climbingGym}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Users className="h-4 w-4" />
-                                    <span>
-                                      참석 {meeting.attendance.confirmed.length}명
-                                      {meeting.maxParticipants && ` / ${meeting.maxParticipants}명`}
-                                    </span>
+            </div>
+          ) : (
+            Object.entries(filteredMeetings).map(([dateKey, dateMeetings]) => (
+              <div key={dateKey} className="rounded-lg border border-border bg-card">
+                <div className="px-4 py-2 border-b border-border bg-muted">
+                  <h3 className="font-medium">{format(new Date(dateKey), 'M월 d일 (EEEE)', { locale: ko })}</h3>
+                </div>
+                <Droppable droppableId={dateKey}>
+                  {(provided) => (
+                    <div {...provided.droppableProps} ref={provided.innerRef} className="p-2 space-y-2">
+                      {dateMeetings.map((meeting, index) => (
+                        <Draggable
+                          key={meeting.meetingName + meeting.date.toString()}
+                          draggableId={meeting.meetingName + meeting.date.toString()}
+                          index={index}
+                        >
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className="p-3 rounded-md bg-background border border-border hover:border-primary transition-colors cursor-pointer"
+                              onClick={() => handleMeetingClick(meeting.id)}
+                            >
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <h4 className="font-medium">
+                                    {meeting.meetingName}
+                                    {meeting.isCrewMeeting && (
+                                      <span className="ml-2 inline-flex items-center rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                                        크루
+                                      </span>
+                                    )}
+                                  </h4>
+                                  <div className="mt-1 space-y-1 text-sm text-muted-foreground">
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-4 w-4" />
+                                      <span>{format(meeting.date, 'a h:mm', { locale: ko })}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <MapPin className="h-4 w-4" />
+                                      <span>{meeting.climbingGym}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Users className="h-4 w-4" />
+                                      <span>
+                                        참석 {meeting.attendance.confirmed.length}명
+                                        {meeting.maxParticipants && ` / ${meeting.maxParticipants}명`}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </div>
-          ))}
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+            ))
+          )}
         </div>
       </DragDropContext>
     </div>

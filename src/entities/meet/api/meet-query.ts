@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { meetApi } from './meet-api';
-import { CreateMeetingDto } from './meet-types';
+import { CreateMeetingDto } from '../model/meet-types';
+
+const CACHE_TIME = {
+  FIVE_MINUTES: 1000 * 60 * 5,
+  THIRTY_MINUTES: 1000 * 60 * 30,
+} as const;
 
 export const QUERY_KEYS = {
   meets: ['meets'] as const,
@@ -8,19 +13,17 @@ export const QUERY_KEYS = {
 } as const;
 
 export const meetQueries = {
-  useMeets: () => {
+  useMeets: () =>
     useQuery(QUERY_KEYS.meets, meetApi.getAllMeets, {
-      staleTime: 1000 * 60 * 5, // 5분
-      cacheTime: 1000 * 60 * 30, // 30분
-    });
-  },
+      staleTime: CACHE_TIME.FIVE_MINUTES, // 5분
+      cacheTime: CACHE_TIME.THIRTY_MINUTES,
+    }),
 
-  useMeet: (id: string) => {
+  useMeet: (id: string) =>
     useQuery(QUERY_KEYS.meet(id), () => meetApi.getMeetById(id), {
-      staleTime: 1000 * 60 * 5, // 5분
-      cacheTime: 1000 * 60 * 30, // 30분
-    });
-  },
+      staleTime: CACHE_TIME.FIVE_MINUTES, // 5분
+      cacheTime: CACHE_TIME.THIRTY_MINUTES,
+    }),
 };
 
 export const meetMutations = {
@@ -29,6 +32,9 @@ export const meetMutations = {
     return useMutation((newMeet: CreateMeetingDto) => meetApi.createMeet(newMeet), {
       onSuccess: () => {
         queryClient.invalidateQueries(QUERY_KEYS.meets);
+      },
+      onError: (error) => {
+        console.error(error);
       },
     });
   },

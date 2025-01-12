@@ -1,7 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 
-import { Meeting } from '@entities/meet/meet-types';
+import { Meeting } from '@/entities/meet/model/meet-types';
 
 interface MeetingFiltersProps {
   meetings: { [key: string]: Meeting[] };

@@ -1,4 +1,4 @@
-import { DailyMeetings } from './meet-types';
+import { DailyMeetings } from '../model/meet-types';
 
 const mockMeetingData: DailyMeetings = {
   '2024-12-01': [
