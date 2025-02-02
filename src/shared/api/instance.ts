@@ -1,7 +1,8 @@
 import axios from 'axios';
-import { ApiError } from './types';
 
-export const apiInstance = axios.create({
+import { type ApiError, type CustomAxiosInstance } from './types';
+
+const apiInstance: CustomAxiosInstance = axios.create({
   baseURL: process.env.REACT_APP_API_URL,
   headers: {
     'Content-Type': 'application/json',
@@ -18,3 +19,5 @@ apiInstance.interceptors.response.use(
     return Promise.reject(apiError);
   },
 );
+
+export { apiInstance };

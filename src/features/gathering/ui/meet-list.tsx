@@ -1,25 +1,22 @@
-import React, { useState } from 'react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Users, Clock, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { Users, Clock, MapPin } from 'lucide-react';
+import React, { useState } from 'react';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useNavigate } from 'react-router-dom';
 
-import MeetingFilters, { MeetingFilters as FilterOptions } from './meet-filter';
-import { DailyMeetings, Meeting } from '@/entities/meet/model/meet-types';
+import { type DailyMeetings } from '@/entities/meet/model/meet-types';
+
+import MeetingFilters, { type MeetingFilters as FilterOptions } from './meet-filter';
 
 interface MeetingListProps {
   meetings: DailyMeetings;
   selectedDate: Date | null;
 }
 
-interface GroupedMeetings {
-  [key: string]: Meeting[];
-}
-
 const MeetingList: React.FC<MeetingListProps> = ({ meetings, selectedDate }) => {
   const navigate = useNavigate();
-  const [groupedMeetings, setGroupedMeetings] = useState<GroupedMeetings>(meetings);
+  const [groupedMeetings, setGroupedMeetings] = useState<DailyMeetings>(meetings);
   const [filters, setFilters] = useState<FilterOptions>({
     gyms: [],
     showCrewOnly: false,
@@ -73,7 +70,7 @@ const MeetingList: React.FC<MeetingListProps> = ({ meetings, selectedDate }) => 
       }
 
       return acc;
-    }, {} as GroupedMeetings);
+    }, {} as DailyMeetings);
   };
 
   const onDragEnd = (result: any) => {

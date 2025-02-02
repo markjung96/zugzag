@@ -1,10 +1,10 @@
-import React from 'react';
 import { X } from 'lucide-react';
+import React from 'react';
 
-import { Meeting } from '@/entities/meet/model/meet-types';
+import { type DailyMeetings } from '@/entities/meet/model/meet-types';
 
 interface MeetingFiltersProps {
-  meetings: { [key: string]: Meeting[] };
+  meetings: DailyMeetings;
   onFiltersChange: (filters: MeetingFilters) => void;
   meetingId?: string; // 모임 ID 추가
   onCreateMeeting?: (id: string) => void;
