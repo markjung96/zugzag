@@ -32,5 +32,5 @@
     }
   },
   "include": ["src/**/*"], // 포함할 파일 경로
-  "exclude": ["node_modules", "dist"] // 제외할 파일 경로
+  "exclude": ["frontend/node_modules", "dist"] // 제외할 파일 경로
 }
