@@ -1,3 +1,5 @@
+type MeetingStatus = 'upcoming' | 'ongoing' | 'finished';
+
 interface Attendance {
   undecided: string[];
   confirmed: string[];
@@ -5,6 +7,8 @@ interface Attendance {
 
 interface Meeting {
   id: string;
+  hostId: string;
+  status: MeetingStatus;
   meetingName: string;
   climbingGym: string;
   date: Date;
