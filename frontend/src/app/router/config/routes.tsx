@@ -1,9 +1,10 @@
 // config/routes.ts
-import React, { lazy } from 'react';
 import { LayoutAuth } from '@app/layout';
-import { RouteObject } from 'react-router-dom'; // React Router의 타입 사용
+import React, { lazy } from 'react';
+import { type RouteObject } from 'react-router-dom'; // React Router의 타입 사용
 
 const LandingPage = lazy(() => import('@pages/landing'));
+const LoginPage = lazy(() => import('@pages/login'));
 const GatheringPage = lazy(() => import('@pages/gathering'));
 const GatheringItemPage = lazy(() => import('@pages/gathering-item'));
 
@@ -34,6 +35,11 @@ const commonRoutes: Route[] = [
         layout: LayoutAuth,
       },
     ],
+  },
+  {
+    name: 'Login',
+    path: '/login',
+    element: <LoginPage />,
   },
 ];
 

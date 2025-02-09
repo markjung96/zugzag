@@ -1,7 +1,8 @@
+import { ContainerLoading } from '@shared/ui';
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { routes, Route as AppRoute } from '../config/routes';
-import { ContainerLoading } from '@shared/ui';
+
+import { routes, type Route as AppRoute } from '../config/routes';
 
 // Route를 재귀적으로 렌더링하는 함수
 const renderRoute = (route: AppRoute) => {

@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import { useQuery, type QueryObserverResult } from 'react-query';
 
-import { meetApi } from '@/entities/meet/api/meet-api';
-
 import { useGatheringFilters, useSelectedDate } from './select';
 
 import type { DailyMeetings } from '@/entities/meet/model/meet-types';
 import type { ApiError } from '@/shared/api/types';
+
+import { meetApi } from '@/entities/meet/api/meet-api';
 
 interface UseGatheringResult {
   meetings: DailyMeetings;
