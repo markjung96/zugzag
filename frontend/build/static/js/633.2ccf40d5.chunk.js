@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkzugzag=self.webpackChunkzugzag||[]).push([[633],{633:(e,l,u)=>{u.r(l),u.d(l,{default:()=>s});var c=u(374),n=(u(662),u(550));const s=()=>{var e;return(0,n.jsx)(c.G_,{clientId:null!==(e="785563485206-uqijr8sn3couj1kb499llkm9e36lc3b7.apps.googleusercontent.com")?e:"",children:(0,n.jsx)("div",{children:"\ub79c\ub529\ud398\uc774\uc9c0"})})}}}]);

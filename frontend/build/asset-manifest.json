@@ -1,0 +1,26 @@
+{
+  "files": {
+    "main.css": "/static/css/main.c4f09869.css",
+    "main.js": "/static/js/main.7c234c58.js",
+    "static/js/633.2ccf40d5.chunk.js": "/static/js/633.2ccf40d5.chunk.js",
+    "static/js/871.d03bf064.chunk.js": "/static/js/871.d03bf064.chunk.js",
+    "static/js/499.35eaf183.chunk.js": "/static/js/499.35eaf183.chunk.js",
+    "static/js/760.30acafe7.chunk.js": "/static/js/760.30acafe7.chunk.js",
+    "static/js/687.3aa42bee.chunk.js": "/static/js/687.3aa42bee.chunk.js",
+    "static/js/132.a4645823.chunk.js": "/static/js/132.a4645823.chunk.js",
+    "static/media/Moneygraphy-Pixel.ttf": "/static/media/Moneygraphy-Pixel.c2cf820178a820558e35.ttf",
+    "static/media/Moneygraphy-Rounded.ttf": "/static/media/Moneygraphy-Rounded.43682343ad9d56315976.ttf",
+    "static/media/Moneygraphy-Rounded.woff": "/static/media/Moneygraphy-Rounded.740596528344fb12e345.woff",
+    "static/media/Moneygraphy-Rounded.eot": "/static/media/Moneygraphy-Rounded.1ef8dfecc47e2c7c64b1.eot",
+    "static/media/Moneygraphy-Pixel.woff": "/static/media/Moneygraphy-Pixel.b4398cac0fab02d6fcfb.woff",
+    "static/media/Moneygraphy-Pixel.eot": "/static/media/Moneygraphy-Pixel.5acb45ebf0d928810843.eot",
+    "static/media/Moneygraphy-Rounded.woff2": "/static/media/Moneygraphy-Rounded.e4dc2204d795cf0ed087.woff2",
+    "static/media/Moneygraphy-Pixel.woff2": "/static/media/Moneygraphy-Pixel.9d733455df2787480670.woff2",
+    "service-worker.js": "/service-worker.js",
+    "index.html": "/index.html"
+  },
+  "entrypoints": [
+    "static/css/main.c4f09869.css",
+    "static/js/main.7c234c58.js"
+  ]
+}
