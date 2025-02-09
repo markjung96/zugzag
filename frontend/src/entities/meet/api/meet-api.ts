@@ -1,7 +1,7 @@
-import { apiInstance } from '@/shared/api/instance';
-
 import { MEET_ENDPOINTS } from './meet-endpoints';
 import { type CreateMeetingDto, type DailyMeetings, type Meeting } from '../model/meet-types';
+
+import { apiInstance } from '@/shared/api/instance';
 
 export const meetApi = {
   getAllMeets: () => apiInstance.get<DailyMeetings>(MEET_ENDPOINTS.all()),
