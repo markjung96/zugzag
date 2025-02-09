@@ -52,7 +52,7 @@ const LoginPage = () => {
           <CardTitle className="text-2xl font-bold text-center">로그인</CardTitle>
           <CardDescription className="text-center">클라이밍 모임에 참여하기 위해 로그인해주세요</CardDescription>
         </CardHeader>
-        {/* <CardContent className="space-y-4">
+        <CardContent className="space-y-4">
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <div className="relative">
@@ -111,7 +111,7 @@ const LoginPage = () => {
               비밀번호를 잊으셨나요?
             </a>
           </p>
-        </CardFooter> */}
+        </CardFooter>
       </Card>
     </div>
   );

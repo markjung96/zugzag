@@ -1,14 +1,23 @@
-import React from 'react';
-import { AppRouter } from './router';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
 import { ThemeProvider } from './provider';
+import { AppRouter } from './router';
 
 function App() {
+  const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+
+  if (!clientId) {
+    return <div>Client ID not found</div>;
+  }
+
   return (
-    <div className="App">
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <AppRouter />
-      </ThemeProvider>
-    </div>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <GoogleOAuthProvider clientId={clientId}>
+        <div className="App">
+          <AppRouter />
+        </div>
+      </GoogleOAuthProvider>
+    </ThemeProvider>
   );
 }
 

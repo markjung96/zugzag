@@ -36,3 +36,4 @@ export {
 } from './alert-dialog';
 export { Input } from './input';
 export { Separator } from './separator';
+export { Alert, AlertTitle, AlertDescription } from './alert';

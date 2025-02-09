@@ -1,15 +1,25 @@
-import { ContainerLoading } from '@shared/ui';
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
+import { ContainerLoading } from '@shared/ui';
+
+import ProtectedRouter from './protected-router';
 import { routes, type Route as AppRoute } from '../config/routes';
 
 // Route를 재귀적으로 렌더링하는 함수
 const renderRoute = (route: AppRoute) => {
-  const { path, element, children, layout: Layout } = route;
+  const { path, element, children, layout: Layout, protected: isProtected } = route;
+
+  // 보호된 라우트인 경우 ProtectedRoute로 감싸기
+  let wrappedElement = element;
+  if (isProtected) {
+    wrappedElement = <ProtectedRouter>{element}</ProtectedRouter>;
+  }
 
   // 레이아웃이 있는 경우 적용
-  const wrappedElement = Layout ? <Layout>{element}</Layout> : element;
+  if (Layout) {
+    wrappedElement = <Layout>{wrappedElement}</Layout>;
+  }
 
   return (
     <Route key={path} path={path} element={wrappedElement}>
