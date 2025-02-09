@@ -1,7 +1,7 @@
 import { useGoogleLogin } from '@react-oauth/google';
 import { ArrowRight, Mail, Lock } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import useAuthStore from '@/features/login/model/store';
 import { Button, Card, CardHeader, CardTitle, Input, Separator } from '@/shared/ui';
@@ -14,20 +14,8 @@ const LoginPage = () => {
 
   const { login, loginWithGoogle, isLoading, error, isAuthenticated, clearError } = useAuthStore();
 
-  // 인증 상태가 변경되면 리다이렉트
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/');
-    }
-  }, [isAuthenticated, navigate]);
-
-  // 에러 메시지 자동 제거
-  useEffect(() => {
-    if (error) {
-      const timer = setTimeout(clearError, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [error, clearError]);
+  const location = useLocation();
+  const from = (location.state as { from?: Location })?.from?.pathname || '/';
 
   // 일반 로그인 핸들러
   const handleLogin = async (e: React.FormEvent) => {
@@ -44,6 +32,21 @@ const LoginPage = () => {
       console.error('Google login failed');
     },
   });
+
+  // 인증 상태가 변경되면 리다이렉트
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate, from]);
+
+  // 에러 메시지 자동 제거
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(clearError, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, clearError]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
