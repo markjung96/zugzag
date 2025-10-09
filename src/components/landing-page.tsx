@@ -1,0 +1,425 @@
+"use client";
+
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Mountain, Users, TrendingUp, ArrowRight } from "lucide-react";
+
+export default function LandingPage() {
+  const [stage, setStage] = useState<"splash" | "intro" | "features" | "cta">(
+    "splash"
+  );
+  const router = useRouter();
+
+  useEffect(() => {
+    const splashTimer = setTimeout(() => setStage("intro"), 2000);
+    return () => clearTimeout(splashTimer);
+  }, []);
+
+  useEffect(() => {
+    if (stage === "intro") {
+      const introTimer = setTimeout(() => setStage("features"), 2500);
+      return () => clearTimeout(introTimer);
+    }
+  }, [stage]);
+
+  useEffect(() => {
+    if (stage === "features") {
+      const featuresTimer = setTimeout(() => setStage("cta"), 2500);
+      return () => clearTimeout(featuresTimer);
+    }
+  }, [stage]);
+
+  const handleStartClick = () => {
+    router.push("/login");
+  };
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-zinc-950">
+      {/* Animated background grid */}
+      <div className="absolute inset-0 opacity-20">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `
+            linear-gradient(to right, rgb(255 107 53 / 0.1) 1px, transparent 1px),
+            linear-gradient(to bottom, rgb(255 107 53 / 0.1) 1px, transparent 1px)
+          `,
+            backgroundSize: "60px 60px",
+          }}
+        />
+      </div>
+
+      {/* Floating particles */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(15)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              width: Math.random() * 4 + 2,
+              height: Math.random() * 4 + 2,
+              background: i % 2 === 0 ? "rgb(255 107 53)" : "rgb(34 211 238)",
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+            animate={{
+              y: [0, -30, 0],
+              x: [0, Math.random() * 20 - 10, 0],
+              opacity: [0.2, 0.6, 0.2],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: Math.random() * 4 + 3,
+              repeat: Number.POSITIVE_INFINITY,
+              delay: Math.random() * 2,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+      </div>
+
+      <AnimatePresence mode="wait">
+        {stage === "splash" && (
+          <motion.div
+            key="splash"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.5 }}
+            className="relative z-10 flex min-h-screen items-center justify-center"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{
+                duration: 0.8,
+                ease: [0.34, 1.56, 0.64, 1],
+              }}
+              className="relative"
+            >
+              {/* Glow effect behind logo */}
+              <motion.div
+                className="absolute inset-0 -z-10 blur-3xl"
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.3, 0.6, 0.3],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                }}
+                style={{
+                  background:
+                    "radial-gradient(circle, rgb(255 107 53 / 0.4), transparent 70%)",
+                }}
+              />
+
+              <img
+                src="/zugzag-logo.png"
+                alt="ZUGZAG Logo"
+                className="h-20 w-auto"
+              />
+            </motion.div>
+
+            {/* Loading dots */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="absolute bottom-1/3 flex gap-2"
+            >
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="h-2 w-2 rounded-full bg-orange-500"
+                  animate={{
+                    scale: [1, 1.3, 1],
+                    opacity: [0.4, 1, 0.4],
+                  }}
+                  transition={{
+                    duration: 1.2,
+                    repeat: Number.POSITIVE_INFINITY,
+                    delay: i * 0.15,
+                  }}
+                />
+              ))}
+            </motion.div>
+          </motion.div>
+        )}
+
+        {stage === "intro" && (
+          <motion.div
+            key="intro"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, x: -100 }}
+            transition={{ duration: 0.5 }}
+            className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6"
+          >
+            {/* Character with dynamic entrance */}
+            <motion.div
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{
+                duration: 0.7,
+                ease: [0.34, 1.56, 0.64, 1],
+              }}
+              className="relative"
+            >
+              {/* Radial glow behind character */}
+              <motion.div
+                className="absolute inset-0 -z-10 scale-150 blur-3xl"
+                animate={{
+                  opacity: [0.3, 0.5, 0.3],
+                  scale: [1.4, 1.6, 1.4],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                }}
+                style={{
+                  background:
+                    "radial-gradient(circle, rgb(255 107 53 / 0.3), rgb(34 211 238 / 0.2), transparent)",
+                }}
+              />
+
+              <motion.img
+                src="/zugzag-character.png"
+                alt="ZUGZAG Character"
+                className="h-72 w-auto drop-shadow-2xl"
+                animate={{
+                  y: [0, -12, 0],
+                  rotate: [0, 3, -3, 0],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                }}
+              />
+            </motion.div>
+
+            {/* Brand name with stagger effect */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.6 }}
+              className="mt-8 text-center"
+            >
+              <h1 className="mb-3 text-6xl font-bold tracking-tight text-white">
+                ZUGZAG
+              </h1>
+              <motion.div
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ delay: 0.5, duration: 0.5 }}
+                className="mx-auto h-1 w-32 rounded-full bg-gradient-to-r from-orange-500 to-cyan-400"
+              />
+              <p className="mt-4 text-lg text-zinc-400">
+                클라이밍 크루의 새로운 시작
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {stage === "features" && (
+          <motion.div
+            key="features"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, y: -50 }}
+            transition={{ duration: 0.5 }}
+            className="relative z-10 flex min-h-screen items-center justify-center px-6"
+          >
+            <div className="grid max-w-4xl gap-6 md:grid-cols-3">
+              {[
+                {
+                  icon: Mountain,
+                  title: "함께 오르기",
+                  desc: "크루원들과 함께",
+                },
+                { icon: Users, title: "크루 관리", desc: "체계적인 운영" },
+                {
+                  icon: TrendingUp,
+                  title: "성장 추적",
+                  desc: "기록과 발전",
+                },
+              ].map((feature, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.15, duration: 0.5 }}
+                  className="group relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-sm"
+                >
+                  {/* Hover gradient effect */}
+                  <motion.div
+                    className="absolute inset-0 -z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                    style={{
+                      background:
+                        "radial-gradient(circle at center, rgb(255 107 53 / 0.1), transparent 70%)",
+                    }}
+                  />
+
+                  <feature.icon className="mb-4 h-10 w-10 text-orange-500" />
+                  <h3 className="mb-2 text-xl font-semibold text-white">
+                    {feature.title}
+                  </h3>
+                  <p className="text-sm text-zinc-400">{feature.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {stage === "cta" && (
+          <motion.div
+            key="cta"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6"
+          >
+            {/* Character floating */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="relative mb-8"
+            >
+              <motion.div
+                className="absolute inset-0 -z-10 scale-150 blur-3xl"
+                animate={{
+                  opacity: [0.2, 0.4, 0.2],
+                  scale: [1.4, 1.6, 1.4],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                }}
+                style={{
+                  background:
+                    "radial-gradient(circle, rgb(255 107 53 / 0.3), rgb(34 211 238 / 0.2), transparent)",
+                }}
+              />
+
+              <motion.img
+                src="/zugzag-character.png"
+                alt="ZUGZAG Character"
+                className="h-56 w-auto drop-shadow-2xl"
+                animate={{
+                  y: [0, -10, 0],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                }}
+              />
+            </motion.div>
+
+            {/* Main content */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-center"
+            >
+              <h1 className="mb-3 text-5xl font-bold text-white md:text-6xl">
+                ZUGZAG
+              </h1>
+              <motion.div
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ delay: 0.4, duration: 0.5 }}
+                className="mx-auto mb-6 h-1 w-40 rounded-full bg-gradient-to-r from-orange-500 to-cyan-400"
+              />
+              <p className="mb-2 text-xl text-zinc-300">함께 오르는 즐거움</p>
+              <p className="text-base text-zinc-500">
+                크루원들과 함께 더 높은 곳으로
+              </p>
+            </motion.div>
+
+            {/* CTA Button */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="mt-12 w-full max-w-md"
+            >
+              <motion.button
+                onClick={handleStartClick}
+                className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-5 text-lg font-semibold text-white shadow-2xl"
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {/* Animated shine effect */}
+                <motion.div
+                  className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  animate={{
+                    translateX: ["100%", "100%", "-100%", "-100%"],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "linear",
+                  }}
+                />
+
+                <span className="relative flex items-center justify-center gap-2">
+                  시작하기
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </span>
+              </motion.button>
+
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                className="mt-6 text-center text-sm text-zinc-500"
+              >
+                이미 계정이 있으신가요?{" "}
+                <button
+                  onClick={handleStartClick}
+                  className="font-semibold text-cyan-400 transition-colors hover:text-cyan-300"
+                >
+                  로그인
+                </button>
+              </motion.p>
+            </motion.div>
+
+            {/* Bottom decorative element */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9 }}
+              className="mt-16 flex gap-2"
+            >
+              {[0, 1, 2, 3].map((i) => (
+                <motion.div
+                  key={i}
+                  className="h-1 w-8 rounded-full bg-zinc-800"
+                  animate={{
+                    backgroundColor:
+                      i === 3
+                        ? ["rgb(39 39 42)", "rgb(255 107 53)", "rgb(39 39 42)"]
+                        : "rgb(39 39 42)",
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                  }}
+                />
+              ))}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

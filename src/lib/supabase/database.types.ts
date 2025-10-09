@@ -8,27 +8,191 @@ export type Json =
 
 export type Database = {
   public: {
-    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     Tables: {
-      // 여기에 Supabase 테이블 타입 정의를 추가하세요
-      // 예시:
-      // users: {
-      //   Row: {
-      //     id: string;
-      //     email: string;
-      //     created_at: string;
-      //   };
-      //   Insert: {
-      //     id?: string;
-      //     email: string;
-      //     created_at?: string;
-      //   };
-      //   Update: {
-      //     id?: string;
-      //     email?: string;
-      //     created_at?: string;
-      //   };
-      // };
+      profiles: {
+        Row: {
+          id: string;
+          email: string;
+          full_name: string | null;
+          avatar_url: string | null;
+          nickname: string | null;
+          bio: string | null;
+          phone: string | null;
+          role: "admin" | "leader" | "member";
+          climbing_level: string | null;
+          joined_at: string;
+          last_seen_at: string;
+          is_active: boolean;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          email: string;
+          full_name?: string | null;
+          avatar_url?: string | null;
+          nickname?: string | null;
+          bio?: string | null;
+          phone?: string | null;
+          role?: "admin" | "leader" | "member";
+          climbing_level?: string | null;
+          joined_at?: string;
+          last_seen_at?: string;
+          is_active?: boolean;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          full_name?: string | null;
+          avatar_url?: string | null;
+          nickname?: string | null;
+          bio?: string | null;
+          phone?: string | null;
+          role?: "admin" | "leader" | "member";
+          climbing_level?: string | null;
+          joined_at?: string;
+          last_seen_at?: string;
+          is_active?: boolean;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      crews: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          logo_url: string | null;
+          location: string | null;
+          max_members: number;
+          is_public: boolean;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          description?: string | null;
+          logo_url?: string | null;
+          location?: string | null;
+          max_members?: number;
+          is_public?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          description?: string | null;
+          logo_url?: string | null;
+          location?: string | null;
+          max_members?: number;
+          is_public?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      crew_members: {
+        Row: {
+          id: string;
+          crew_id: string;
+          user_id: string;
+          role: "owner" | "admin" | "member";
+          joined_at: string;
+          is_active: boolean;
+        };
+        Insert: {
+          id?: string;
+          crew_id: string;
+          user_id: string;
+          role?: "owner" | "admin" | "member";
+          joined_at?: string;
+          is_active?: boolean;
+        };
+        Update: {
+          id?: string;
+          crew_id?: string;
+          user_id?: string;
+          role?: "owner" | "admin" | "member";
+          joined_at?: string;
+          is_active?: boolean;
+        };
+      };
+      climbing_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          crew_id: string | null;
+          location: string | null;
+          duration_minutes: number | null;
+          difficulty_level: string | null;
+          notes: string | null;
+          photos: Json;
+          session_date: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          crew_id?: string | null;
+          location?: string | null;
+          duration_minutes?: number | null;
+          difficulty_level?: string | null;
+          notes?: string | null;
+          photos?: Json;
+          session_date: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          crew_id?: string | null;
+          location?: string | null;
+          duration_minutes?: number | null;
+          difficulty_level?: string | null;
+          notes?: string | null;
+          photos?: Json;
+          session_date?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      activity_logs: {
+        Row: {
+          id: string;
+          user_id: string;
+          crew_id: string | null;
+          activity_type: string;
+          activity_data: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          crew_id?: string | null;
+          activity_type: string;
+          activity_data?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          crew_id?: string | null;
+          activity_type?: string;
+          activity_data?: Json;
+          created_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
