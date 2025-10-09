@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkzugzag=self.webpackChunkzugzag||[]).push([[760],{760:(e,a,s)=>{s.r(a),s.d(a,{default:()=>g});s(662);var u=s(550);const g=()=>(0,u.jsx)("div",{children:"GatheringItemPage"})}}]);

@@ -1,3 +1,0 @@
-# Zugzag
-
-for my crew
