@@ -77,6 +77,27 @@
 
 ---
 
+### ✅ 4. 회원가입 및 비밀번호 관리
+
+**회원가입 페이지** (`/signup`)
+
+- 이메일/비밀번호 회원가입
+- Google/GitHub 소셜 가입
+- 폼 유효성 검사
+- 이메일 인증
+
+**비밀번호 찾기** (`/forgot-password`)
+
+- 이메일로 재설정 링크 발송
+- 안전한 토큰 기반 인증
+
+**비밀번호 재설정** (`/auth/reset-password`)
+
+- 토큰 유효성 검사
+- 새 비밀번호 설정
+
+---
+
 ## 🎯 당신이 제공해야 하는 값
 
 ### 필수 (2개):
@@ -117,15 +138,23 @@ zugzag/
 │   │       └── database.types.ts        # ✨ DB 타입 정의 (업데이트)
 │   └── app/
 │       ├── auth/
-│       │   └── callback/
-│       │       └── route.ts             # ✨ OAuth 콜백 핸들러
-│       └── login/
-│           └── page.tsx                 # ✨ 로그인 페이지 (업데이트)
+│       │   ├── callback/
+│       │   │   └── route.ts             # ✨ OAuth 콜백 핸들러
+│       │   └── reset-password/
+│       │       └── page.tsx             # ✨ 비밀번호 재설정 페이지
+│       ├── login/
+│       │   └── page.tsx                 # ✨ 로그인 페이지
+│       ├── signup/
+│       │   └── page.tsx                 # ✨ 회원가입 페이지
+│       └── forgot-password/
+│           └── page.tsx                 # ✨ 비밀번호 찾기 페이지
 │
 ├── supabase/
 │   └── migrations/
 │       └── 001_initial_schema.sql       # ✨ DB 스키마
 │
+├── docs/
+│   └── AUTH_SYSTEM.md                   # 📖 인증 시스템 상세 문서
 ├── QUICK_START.md                       # ⚡ 빠른 시작 (1분)
 ├── SETUP_GUIDE.md                       # 📚 상세 가이드
 ├── GOOGLE_LOGIN_SETUP.md                # 🔧 Google OAuth 가이드
@@ -167,13 +196,40 @@ pnpm dev
 
 ## 🔧 인증 함수 사용법
 
-### Google 로그인
+### 회원가입
 
 ```typescript
-import { signInWithGoogle } from "@/lib/auth/auth-helpers";
+import { signUpWithEmail } from "@/lib/auth/auth-helpers";
 
-// 사용
+// 이메일 회원가입
+await signUpWithEmail(email, password, {
+  full_name: "홍길동",
+  avatar_url: "https://...",
+});
+```
+
+### 로그인
+
+```typescript
+import { signInWithEmail, signInWithGoogle, signInWithGithub } from "@/lib/auth/auth-helpers";
+
+// 이메일 로그인
+await signInWithEmail(email, password);
+
+// Google 로그인
 await signInWithGoogle();
+
+// GitHub 로그인
+await signInWithGithub();
+```
+
+### 비밀번호 재설정
+
+```typescript
+import { resetPassword } from "@/lib/auth/auth-helpers";
+
+// 재설정 이메일 발송
+await resetPassword(email);
 ```
 
 ### 현재 사용자 가져오기
@@ -325,12 +381,17 @@ pnpm dev
 - [x] Google OAuth 구현
 - [x] GitHub OAuth 구현
 - [x] 이메일 로그인 구현
+- [x] 이메일 회원가입 구현
+- [x] 비밀번호 찾기/재설정 구현
 - [x] 자동 프로필 생성
 - [x] Row Level Security
 - [x] 타입 정의
 - [x] 에러 핸들링
 - [x] 로딩 상태
+- [x] 쿠키 기반 세션 관리
+- [x] 미들웨어 세션 갱신
 - [x] 설정 가이드 문서
+- [x] 인증 시스템 상세 문서
 
 ---
 
@@ -338,6 +399,7 @@ pnpm dev
 
 더 자세한 정보가 필요하면:
 
+- **인증 시스템 상세**: `docs/AUTH_SYSTEM.md` ⭐ **NEW!**
 - **빠른 시작**: `QUICK_START.md`
 - **전체 가이드**: `SETUP_GUIDE.md`
 - **Google 설정**: `GOOGLE_LOGIN_SETUP.md`
@@ -347,6 +409,42 @@ pnpm dev
 
 ## 🎉 완성!
 
-이제 Google 로그인이 완벽하게 작동합니다!
+이제 완전한 인증 시스템이 작동합니다!
+
+### 구현된 페이지:
+- ✅ `/login` - 로그인 (이메일/Google/GitHub)
+- ✅ `/signup` - 회원가입
+- ✅ `/forgot-password` - 비밀번호 찾기
+- ✅ `/auth/reset-password` - 비밀번호 재설정
+- ✅ `/auth/callback` - OAuth 콜백 핸들러
+
+### 보안 기능:
+- ✅ JWT 토큰 기반 인증
+- ✅ HttpOnly 쿠키 (XSS 방지)
+- ✅ 자동 세션 갱신
+- ✅ Row Level Security
+- ✅ 이메일 인증
 
 필요한 건 Supabase URL과 KEY 2개뿐입니다. 🚀
+
+---
+
+## 🔐 인증 시스템 동작 방식
+
+### 1. 세션 관리 (쿠키 기반)
+- JWT Access Token (1시간 유효)
+- Refresh Token (7일 유효)
+- HttpOnly 쿠키에 안전하게 저장
+- 미들웨어가 자동으로 세션 갱신
+
+### 2. 재로그인
+- Refresh Token이 유효한 동안 자동 로그인 유지
+- "로그인 상태 유지" 옵션으로 장기 세션 가능
+- 브라우저 재시작 후에도 로그인 상태 유지
+
+### 3. 로그인 상태 유지
+- 쿠키에 토큰 저장으로 자동 관리
+- 미들웨어가 매 요청마다 세션 검증
+- 토큰 만료 전 자동 갱신
+
+더 자세한 정보는 `docs/AUTH_SYSTEM.md`를 참고하세요! 📖
