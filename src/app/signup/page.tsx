@@ -1,63 +1,174 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, Mail, Lock, Loader2 } from "lucide-react";
+import { ArrowLeft, Mail, Lock, User, Loader2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { signInWithGoogle, signInWithGithub, signInWithEmail } from "@/lib/auth/auth-helpers";
+import { signUpWithEmail, signInWithGoogle, signInWithGithub } from "@/lib/auth/auth-helpers";
 
-export default function LoginPage() {
+export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const router = useRouter();
+
+  const validateForm = () => {
+    if (!email || !password || !confirmPassword || !fullName) {
+      setError("모든 필드를 입력해주세요.");
+      return false;
+    }
+
+    if (password.length < 8) {
+      setError("비밀번호는 최소 8자 이상이어야 합니다.");
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      setError("비밀번호가 일치하지 않습니다.");
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("유효한 이메일 주소를 입력해주세요.");
+      return false;
+    }
+
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
 
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      await signInWithEmail(email, password);
-      router.push("/");
-    } catch (err) {
-      console.error("로그인 실패:", err);
-      setError("이메일 또는 비밀번호가 올바르지 않습니다.");
+      await signUpWithEmail(email, password, {
+        full_name: fullName,
+      });
+
+      setSuccess(true);
+
+      // 2초 후 로그인 페이지로 리다이렉트
+      setTimeout(() => {
+        router.push("/login");
+      }, 2000);
+    } catch (err: any) {
+      console.error("회원가입 실패:", err);
+
+      if (err.message?.includes("already registered")) {
+        setError("이미 가입된 이메일입니다.");
+      } else if (err.message?.includes("invalid email")) {
+        setError("유효하지 않은 이메일입니다.");
+      } else {
+        setError("회원가입에 실패했습니다. 다시 시도해주세요.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSignUp = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
       await signInWithGoogle();
-      // OAuth는 자동으로 리다이렉트됨
     } catch (err) {
-      console.error("Google 로그인 실패:", err);
-      setError("Google 로그인에 실패했습니다. 다시 시도해주세요.");
+      console.error("Google 가입 실패:", err);
+      setError("Google 가입에 실패했습니다. 다시 시도해주세요.");
       setIsLoading(false);
     }
   };
 
-  const handleGithubLogin = async () => {
+  const handleGithubSignUp = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
       await signInWithGithub();
-      // OAuth는 자동으로 리다이렉트됨
     } catch (err) {
-      console.error("GitHub 로그인 실패:", err);
-      setError("GitHub 로그인에 실패했습니다. 다시 시도해주세요.");
+      console.error("GitHub 가입 실패:", err);
+      setError("GitHub 가입에 실패했습니다. 다시 시도해주세요.");
       setIsLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <div className="relative min-h-screen overflow-hidden bg-zinc-950">
+        <div className="absolute inset-0 opacity-20">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `
+                linear-gradient(to right, rgb(255 107 53 / 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgb(255 107 53 / 0.1) 1px, transparent 1px)
+              `,
+              backgroundSize: "40px 40px",
+            }}
+          />
+        </div>
+
+        <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="mb-6 flex justify-center"
+            >
+              <div className="rounded-full bg-gradient-to-r from-orange-500 to-cyan-400 p-4">
+                <CheckCircle2 className="h-16 w-16 text-white" />
+              </div>
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mb-3 text-xl font-bold text-white md:mb-4 md:text-2xl lg:text-3xl"
+            >
+              가입이 완료되었습니다!
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="mb-2 text-sm text-zinc-400 md:text-base"
+            >
+              이메일을 확인하여 계정을 인증해주세요.
+            </motion.p>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="text-xs text-zinc-500 md:text-sm lg:text-base"
+            >
+              잠시 후 로그인 페이지로 이동합니다...
+            </motion.p>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-zinc-950">
@@ -67,9 +178,9 @@ export default function LoginPage() {
           className="absolute inset-0"
           style={{
             backgroundImage: `
-            linear-gradient(to right, rgb(255 107 53 / 0.1) 1px, transparent 1px),
-            linear-gradient(to bottom, rgb(255 107 53 / 0.1) 1px, transparent 1px)
-          `,
+              linear-gradient(to right, rgb(255 107 53 / 0.1) 1px, transparent 1px),
+              linear-gradient(to bottom, rgb(255 107 53 / 0.1) 1px, transparent 1px)
+            `,
             backgroundSize: "40px 40px",
           }}
         />
@@ -188,7 +299,7 @@ export default function LoginPage() {
               className="mb-6 text-center md:mb-8"
             >
               <h1 className="mb-2 text-xl font-bold text-white md:mb-3 md:text-2xl lg:text-3xl">
-                크루원 로그인
+                크루원 가입
               </h1>
               <motion.div
                 initial={{ scaleX: 0 }}
@@ -196,7 +307,7 @@ export default function LoginPage() {
                 transition={{ delay: 0.5, duration: 0.5 }}
                 className="mx-auto mb-3 h-1 w-16 rounded-full bg-gradient-to-r from-orange-500 to-cyan-400 md:mb-4 md:w-20 lg:w-24"
               />
-              <p className="text-sm text-zinc-400 md:text-base">ZUGZAG에 오신 것을 환영합니다</p>
+              <p className="text-sm text-zinc-400 md:text-base">ZUGZAG의 크루원이 되어보세요</p>
             </motion.div>
 
             {/* 에러 메시지 */}
@@ -210,14 +321,35 @@ export default function LoginPage() {
               </motion.div>
             )}
 
-            {/* 로그인 폼 */}
+            {/* 회원가입 폼 */}
             <motion.form
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
               onSubmit={handleSubmit}
-              className="space-y-5"
+              className="space-y-4"
             >
+              <div>
+                <label
+                  htmlFor="fullName"
+                  className="mb-1.5 block text-sm font-medium text-zinc-300 md:mb-2 md:text-base"
+                >
+                  이름
+                </label>
+                <div className="relative">
+                  <User className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-zinc-500 md:left-4 md:h-6 md:w-6" />
+                  <input
+                    type="text"
+                    id="fullName"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 pr-3 pl-10 text-sm text-white placeholder-zinc-500 backdrop-blur-sm transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none md:py-3.5 md:pr-4 md:pl-12 md:text-base"
+                    placeholder="홍길동"
+                    required
+                  />
+                </div>
+              </div>
+
               <div>
                 <label
                   htmlFor="email"
@@ -258,22 +390,28 @@ export default function LoginPage() {
                     required
                   />
                 </div>
+                <p className="mt-1 text-xs text-zinc-500 md:text-sm">최소 8자 이상</p>
               </div>
 
-              <div className="flex items-center justify-between text-sm md:text-base">
-                <label className="flex items-center text-zinc-400">
-                  <input
-                    type="checkbox"
-                    className="mr-1.5 h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-orange-500 focus:ring-2 focus:ring-orange-500/20 md:mr-2 md:h-5 md:w-5"
-                  />
-                  로그인 상태 유지
-                </label>
-                <Link
-                  href="/forgot-password"
-                  className="text-cyan-400 transition-colors hover:text-cyan-300"
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="mb-1.5 block text-sm font-medium text-zinc-300 md:mb-2 md:text-base"
                 >
-                  비밀번호 찾기
-                </Link>
+                  비밀번호 확인
+                </label>
+                <div className="relative">
+                  <Lock className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-zinc-500 md:left-4 md:h-6 md:w-6" />
+                  <input
+                    type="password"
+                    id="confirmPassword"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 pr-3 pl-10 text-sm text-white placeholder-zinc-500 backdrop-blur-sm transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none md:py-3.5 md:pr-4 md:pl-12 md:text-base"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
               </div>
 
               <motion.button
@@ -283,7 +421,6 @@ export default function LoginPage() {
                 whileHover={!isLoading ? { scale: 1.01, y: -1 } : {}}
                 whileTap={!isLoading ? { scale: 0.99 } : {}}
               >
-                {/* Animated shine effect */}
                 {!isLoading && (
                   <motion.div
                     className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent"
@@ -299,12 +436,12 @@ export default function LoginPage() {
                 )}
                 <span className="relative flex items-center justify-center gap-2">
                   {isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
-                  로그인
+                  가입하기
                 </span>
               </motion.button>
             </motion.form>
 
-            {/* 소셜 로그인 */}
+            {/* 소셜 가입 */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -323,7 +460,7 @@ export default function LoginPage() {
               <div className="mt-4 space-y-2.5 md:mt-6 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
                 <motion.button
                   type="button"
-                  onClick={handleGoogleLogin}
+                  onClick={handleGoogleSignUp}
                   disabled={isLoading}
                   className="flex w-full items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-3 text-sm font-medium text-white backdrop-blur-sm transition-all hover:bg-zinc-800/50 disabled:cursor-not-allowed disabled:opacity-50 md:px-4 md:py-3.5 md:text-base"
                   whileHover={!isLoading ? { scale: 1.02 } : {}}
@@ -352,7 +489,7 @@ export default function LoginPage() {
 
                 <motion.button
                   type="button"
-                  onClick={handleGithubLogin}
+                  onClick={handleGithubSignUp}
                   disabled={isLoading}
                   className="flex w-full items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-3 text-sm font-medium text-white backdrop-blur-sm transition-all hover:bg-zinc-800/50 disabled:cursor-not-allowed disabled:opacity-50 md:px-4 md:py-3.5 md:text-base"
                   whileHover={!isLoading ? { scale: 1.02 } : {}}
@@ -369,19 +506,19 @@ export default function LoginPage() {
               </div>
             </motion.div>
 
-            {/* 회원가입 링크 */}
+            {/* 로그인 링크 */}
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.6 }}
               className="mt-6 text-center text-sm text-zinc-500 md:mt-8 md:text-base"
             >
-              아직 크루원이 아니신가요?{" "}
+              이미 크루원이신가요?{" "}
               <Link
-                href="/signup"
+                href="/login"
                 className="font-semibold text-cyan-400 transition-colors hover:text-cyan-300"
               >
-                가입하기
+                로그인하기
               </Link>
             </motion.p>
           </motion.div>
