@@ -134,6 +134,45 @@ export default function DashboardPage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.5 }}
         >
+          {/* 인기 암장 위젯 */}
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">인기 암장 🔥</h3>
+              <button className="flex items-center gap-1 text-sm text-orange-500 transition-colors hover:text-orange-400">
+                전체보기
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                { name: "더클라임 강남점", visits: 24, trend: "+12%" },
+                { name: "클라이밍파크 신림점", visits: 18, trend: "+8%" },
+                { name: "더클라임 홍대점", visits: 15, trend: "+5%" },
+              ].map((gym, idx) => (
+                <motion.div
+                  key={gym.name}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.6 + idx * 0.1 }}
+                  className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 p-4 transition-all hover:border-zinc-700"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-lg font-bold text-white">
+                      {idx + 1}
+                    </div>
+                    <div>
+                      <div className="font-semibold text-white">{gym.name}</div>
+                      <div className="text-sm text-zinc-400">{gym.visits}회 방문</div>
+                    </div>
+                  </div>
+                  <div className="rounded-full bg-green-500/10 px-3 py-1 text-sm font-medium text-green-500">
+                    {gym.trend}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-xl font-bold text-white">최근 성과</h3>
             <button className="flex items-center gap-1 text-sm text-cyan-400 transition-colors hover:text-cyan-300">
