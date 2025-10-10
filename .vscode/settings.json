@@ -1,38 +1,69 @@
 {
-  "editor.formatOnSave": true,
+  // 저장 시 자동 포맷팅
+  "editor.formatOnSave": false,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+  // 저장 시 ESLint 자동 수정 (import 정렬 포함)
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit",
+    "source.fixAll": "explicit",
     "source.organizeImports": "never"
   },
-  "eslint.validate": [
-    "javascript",
-    "javascriptreact",
-    "typescript",
-    "typescriptreact"
-  ],
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // ESLint 확장 설정 (Flat Config 사용 강제)
+  "eslint.experimental.useFlatConfig": true,
+  "eslint.codeActionsOnSave.mode": "all",
+  "eslint.format.enable": false,
+
+  // 저장 후 Prettier 실행 (ESLint 다음)
   "[typescript]": {
+    "editor.formatOnSave": true,
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[typescriptreact]": {
+    "editor.formatOnSave": true,
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[javascript]": {
+    "editor.formatOnSave": true,
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[javascriptreact]": {
+    "editor.formatOnSave": true,
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "[json]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "files.associations": {
-    "*.css": "tailwindcss"
-  },
+
+  // TypeScript 설정
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // ESLint 설정
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+
+  // Prettier 설정
+  "prettier.enable": true,
+
+  // Tailwind CSS 설정
   "tailwindCSS.experimental.classRegex": [
     ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
     ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
-  ]
+  ],
+
+  // 파일 제외
+  "files.exclude": {
+    "**/.git": true,
+    "**/.next": true,
+    "**/node_modules": true,
+    "**/.vercel": true
+  },
+
+  // 검색 제외
+  "search.exclude": {
+    "**/.git": true,
+    "**/.next": true,
+    "**/node_modules": true,
+    "**/pnpm-lock.yaml": true,
+    "**/.vercel": true
+  }
 }
+
