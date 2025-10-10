@@ -1,15 +1,27 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Mountain, Users, TrendingUp, ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function LandingPage() {
-  const [stage, setStage] = useState<"splash" | "intro" | "features" | "cta">(
-    "splash"
-  );
+  const [stage, setStage] = useState<"splash" | "intro" | "features" | "cta">("splash");
   const router = useRouter();
+
+  // 파티클 속성을 컴포넌트 마운트 시 한 번만 생성
+  const [particles] = useState(() =>
+    Array.from({ length: 15 }, (_, i) => ({
+      id: i,
+      width: Math.random() * 4 + 2,
+      height: Math.random() * 4 + 2,
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      xDrift: Math.random() * 20 - 10,
+      duration: Math.random() * 4 + 3,
+      delay: Math.random() * 2,
+    })),
+  );
 
   useEffect(() => {
     const splashTimer = setTimeout(() => setStage("intro"), 2000);
@@ -52,27 +64,27 @@ export default function LandingPage() {
 
       {/* Floating particles */}
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(15)].map((_, i) => (
+        {particles.map((particle) => (
           <motion.div
-            key={i}
+            key={particle.id}
             className="absolute rounded-full"
             style={{
-              width: Math.random() * 4 + 2,
-              height: Math.random() * 4 + 2,
-              background: i % 2 === 0 ? "rgb(255 107 53)" : "rgb(34 211 238)",
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
+              width: particle.width,
+              height: particle.height,
+              background: particle.id % 2 === 0 ? "rgb(255 107 53)" : "rgb(34 211 238)",
+              left: particle.left,
+              top: particle.top,
             }}
             animate={{
               y: [0, -30, 0],
-              x: [0, Math.random() * 20 - 10, 0],
+              x: [0, particle.xDrift, 0],
               opacity: [0.2, 0.6, 0.2],
               scale: [1, 1.2, 1],
             }}
             transition={{
-              duration: Math.random() * 4 + 3,
+              duration: particle.duration,
               repeat: Number.POSITIVE_INFINITY,
-              delay: Math.random() * 2,
+              delay: particle.delay,
               ease: "easeInOut",
             }}
           />
@@ -111,16 +123,11 @@ export default function LandingPage() {
                   ease: "easeInOut",
                 }}
                 style={{
-                  background:
-                    "radial-gradient(circle, rgb(255 107 53 / 0.4), transparent 70%)",
+                  background: "radial-gradient(circle, rgb(255 107 53 / 0.4), transparent 70%)",
                 }}
               />
 
-              <img
-                src="/zugzag-logo.png"
-                alt="ZUGZAG Logo"
-                className="h-20 w-auto"
-              />
+              <img src="/zugzag-logo.png" alt="ZUGZAG Logo" className="h-20 w-auto" />
             </motion.div>
 
             {/* Loading dots */}
@@ -209,18 +216,14 @@ export default function LandingPage() {
               transition={{ delay: 0.3, duration: 0.6 }}
               className="mt-8 text-center"
             >
-              <h1 className="mb-3 text-6xl font-bold tracking-tight text-white">
-                ZUGZAG
-              </h1>
+              <h1 className="mb-3 text-6xl font-bold tracking-tight text-white">ZUGZAG</h1>
               <motion.div
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ delay: 0.5, duration: 0.5 }}
                 className="mx-auto h-1 w-32 rounded-full bg-gradient-to-r from-orange-500 to-cyan-400"
               />
-              <p className="mt-4 text-lg text-zinc-400">
-                클라이밍 크루의 새로운 시작
-              </p>
+              <p className="mt-4 text-lg text-zinc-400">클라이밍 크루의 새로운 시작</p>
             </motion.div>
           </motion.div>
         )}
@@ -265,9 +268,7 @@ export default function LandingPage() {
                   />
 
                   <feature.icon className="mb-4 h-10 w-10 text-orange-500" />
-                  <h3 className="mb-2 text-xl font-semibold text-white">
-                    {feature.title}
-                  </h3>
+                  <h3 className="mb-2 text-xl font-semibold text-white">{feature.title}</h3>
                   <p className="text-sm text-zinc-400">{feature.desc}</p>
                 </motion.div>
               ))}
@@ -329,9 +330,7 @@ export default function LandingPage() {
               transition={{ delay: 0.2 }}
               className="text-center"
             >
-              <h1 className="mb-3 text-5xl font-bold text-white md:text-6xl">
-                ZUGZAG
-              </h1>
+              <h1 className="mb-3 text-5xl font-bold text-white md:text-6xl">ZUGZAG</h1>
               <motion.div
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
@@ -339,9 +338,7 @@ export default function LandingPage() {
                 className="mx-auto mb-6 h-1 w-40 rounded-full bg-gradient-to-r from-orange-500 to-cyan-400"
               />
               <p className="mb-2 text-xl text-zinc-300">함께 오르는 즐거움</p>
-              <p className="text-base text-zinc-500">
-                크루원들과 함께 더 높은 곳으로
-              </p>
+              <p className="text-base text-zinc-500">크루원들과 함께 더 높은 곳으로</p>
             </motion.div>
 
             {/* CTA Button */}

@@ -1,15 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
-import Link from "next/link";
 import { ArrowLeft, Mail, Lock, Loader2 } from "lucide-react";
-import {
-  signInWithGoogle,
-  signInWithGithub,
-  signInWithEmail,
-} from "@/lib/auth/auth-helpers";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+import { signInWithGoogle, signInWithGithub, signInWithEmail } from "@/lib/auth/auth-helpers";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -190,9 +187,7 @@ export default function LoginPage() {
               transition={{ duration: 0.5, delay: 0.3 }}
               className="mb-8 text-center"
             >
-              <h1 className="mb-2 text-3xl font-bold text-white">
-                크루원 로그인
-              </h1>
+              <h1 className="mb-2 text-3xl font-bold text-white">크루원 로그인</h1>
               <motion.div
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
@@ -222,20 +217,17 @@ export default function LoginPage() {
               className="space-y-4"
             >
               <div>
-                <label
-                  htmlFor="email"
-                  className="mb-2 block text-sm font-medium text-zinc-300"
-                >
+                <label htmlFor="email" className="mb-2 block text-sm font-medium text-zinc-300">
                   이메일
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
+                  <Mail className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-zinc-500" />
                   <input
                     type="email"
                     id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 pl-12 pr-4 text-white placeholder-zinc-500 backdrop-blur-sm transition-all focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 pr-4 pl-12 text-white placeholder-zinc-500 backdrop-blur-sm transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none"
                     placeholder="your@email.com"
                     required
                   />
@@ -243,20 +235,17 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label
-                  htmlFor="password"
-                  className="mb-2 block text-sm font-medium text-zinc-300"
-                >
+                <label htmlFor="password" className="mb-2 block text-sm font-medium text-zinc-300">
                   비밀번호
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
+                  <Lock className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-zinc-500" />
                   <input
                     type="password"
                     id="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 pl-12 pr-4 text-white placeholder-zinc-500 backdrop-blur-sm transition-all focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 pr-4 pl-12 text-white placeholder-zinc-500 backdrop-blur-sm transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none"
                     placeholder="••••••••"
                     required
                   />
