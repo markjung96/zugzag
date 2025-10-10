@@ -65,7 +65,7 @@ export const signUpWithEmail = async (
   metadata?: {
     full_name?: string;
     avatar_url?: string;
-  }
+  },
 ) => {
   const supabase = createClient();
 
@@ -116,11 +116,7 @@ export const getCurrentUser = async () => {
 export const getUserProfile = async (userId: string) => {
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .single();
+  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
 
   if (error) {
     console.error("프로필 가져오기 오류:", error);
@@ -132,13 +128,13 @@ export const getUserProfile = async (userId: string) => {
 
 export const updateUserProfile = async (
   userId: string,
-  updates: Partial<Database["public"]["Tables"]["profiles"]["Update"]>
+  updates: Database["public"]["Tables"]["profiles"]["Update"],
 ) => {
   const supabase = createClient();
 
   const { data, error } = await supabase
     .from("profiles")
-    .update(updates)
+    .update(updates as never)
     .eq("id", userId)
     .select()
     .single();
