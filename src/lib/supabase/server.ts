@@ -17,13 +17,13 @@ export const createClient = async () => {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, options),
             );
           } catch {
             // 서버 컴포넌트에서 쿠키를 설정할 수 없는 경우 무시
           }
         },
       },
-    }
+    },
   );
 };
