@@ -59,3 +59,17 @@ Thumbs.db
 # Others
 dist
 *.log
+
+# Documentation and Scripts (non-FE)
+docs/
+scripts/
+supabase/
+
+# Setup and Guide files
+ENV_EXAMPLE.md
+ENV_SETUP.md
+GOOGLE_LOGIN_SETUP.md
+QUICK_START.md
+README_AUTH.md
+SETUP_GUIDE.md
+GYM_HANDLE_COLLECTION_GUIDE.md
