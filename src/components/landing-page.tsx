@@ -40,12 +40,13 @@ export default function LandingPage() {
     checkAuth();
   }, [router]);
 
-  // 사용자 인터렉션으로 마지막 단계로 스킵
+  // 사용자 인터렉션으로 마지막 단계로 스킵 (CTA 단계가 아닐 때만)
   useEffect(() => {
+    // 이미 마지막 단계면 이벤트 리스너를 등록하지 않음
+    if (stage === "cta") return;
+
     const skipToEnd = () => {
-      if (stage !== "cta") {
-        setStage("cta");
-      }
+      setStage("cta");
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
