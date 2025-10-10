@@ -180,7 +180,7 @@ export default function ForgotPasswordPage() {
             <motion.img
               src="/zugzag-logo.png"
               alt="ZUGZAG"
-              className="h-7 w-auto md:h-9"
+              className="h-6 w-auto md:h-7"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             />
