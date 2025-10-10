@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import { Home, Users, Calendar, User, Menu, X } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -28,14 +27,12 @@ export default function MainLayout({
       <aside className="hidden w-64 border-r border-zinc-800 bg-zinc-900/50 backdrop-blur-xl lg:flex lg:flex-col">
         {/* Logo */}
         <div className="flex h-16 items-center gap-3 border-b border-zinc-800 px-6">
-          <Image
+          <motion.img
             src="/zugzag-logo.png"
             alt="ZUGZAG"
-            width={32}
-            height={32}
-            className="h-8 w-auto"
+            className="h-6 w-auto"
+            whileHover={{ scale: 1.05 }}
           />
-          <span className="text-xl font-bold text-white">ZUGZAG</span>
         </div>
 
         {/* Navigation */}
@@ -103,12 +100,11 @@ export default function MainLayout({
         {/* Logo */}
         <div className="flex h-16 items-center justify-between border-b border-zinc-800 px-6">
           <div className="flex items-center gap-3">
-            <Image
+            <motion.img
               src="/zugzag-logo.png"
               alt="ZUGZAG"
-              width={32}
-              height={32}
-              className="h-8 w-auto"
+              className="h-6 w-auto"
+              whileHover={{ scale: 1.05 }}
             />
             <span className="text-xl font-bold text-white">ZUGZAG</span>
           </div>
@@ -154,12 +150,11 @@ export default function MainLayout({
           >
             <Menu className="h-6 w-6" />
           </button>
-          <Image
+          <motion.img
             src="/zugzag-logo.png"
             alt="ZUGZAG"
-            width={32}
-            height={32}
-            className="h-8 w-auto"
+            className="h-6 w-auto"
+            whileHover={{ scale: 1.05 }}
           />
           <div className="w-10" /> {/* Spacer for centering */}
         </header>
