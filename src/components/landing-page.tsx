@@ -6,6 +6,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
+import { createClient } from "@/lib/supabase/client";
+
 export default function LandingPage() {
   const [stage, setStage] = useState<"splash" | "intro" | "features" | "cta">("splash");
   const router = useRouter();
@@ -23,6 +25,45 @@ export default function LandingPage() {
       delay: Math.random() * 2,
     })),
   );
+
+  // 로그인 상태 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        router.push("/dashboard");
+      }
+    };
+    checkAuth();
+  }, [router]);
+
+  // 사용자 인터렉션으로 마지막 단계로 스킵
+  useEffect(() => {
+    const skipToEnd = () => {
+      if (stage !== "cta") {
+        setStage("cta");
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" || e.key === " " || e.key === "Enter") {
+        skipToEnd();
+      }
+    };
+
+    window.addEventListener("click", skipToEnd);
+    window.addEventListener("touchstart", skipToEnd);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("click", skipToEnd);
+      window.removeEventListener("touchstart", skipToEnd);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [stage]);
 
   useEffect(() => {
     const splashTimer = setTimeout(() => setStage("intro"), 2000);
