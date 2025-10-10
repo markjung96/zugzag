@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Mountain, Users, TrendingUp, ArrowRight } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
@@ -127,7 +128,13 @@ export default function LandingPage() {
                 }}
               />
 
-              <img src="/zugzag-logo.png" alt="ZUGZAG Logo" className="h-16 w-auto md:h-20" />
+              <Image
+                src="/zugzag-logo.png"
+                alt="ZUGZAG Logo"
+                width={160}
+                height={64}
+                className="h-16 w-auto md:h-20"
+              />
             </motion.div>
 
             {/* Loading dots */}
