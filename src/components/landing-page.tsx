@@ -57,7 +57,7 @@ export default function LandingPage() {
             linear-gradient(to right, rgb(255 107 53 / 0.1) 1px, transparent 1px),
             linear-gradient(to bottom, rgb(255 107 53 / 0.1) 1px, transparent 1px)
           `,
-            backgroundSize: "60px 60px",
+            backgroundSize: "40px 40px",
           }}
         />
       </div>
@@ -127,7 +127,7 @@ export default function LandingPage() {
                 }}
               />
 
-              <img src="/zugzag-logo.png" alt="ZUGZAG Logo" className="h-20 w-auto" />
+              <img src="/zugzag-logo.png" alt="ZUGZAG Logo" className="h-16 w-auto md:h-20" />
             </motion.div>
 
             {/* Loading dots */}
@@ -163,7 +163,7 @@ export default function LandingPage() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, x: -100 }}
             transition={{ duration: 0.5 }}
-            className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6"
+            className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 md:px-6"
           >
             {/* Character with dynamic entrance */}
             <motion.div
@@ -196,7 +196,7 @@ export default function LandingPage() {
               <motion.img
                 src="/zugzag-character.png"
                 alt="ZUGZAG Character"
-                className="h-72 w-auto drop-shadow-2xl"
+                className="h-48 w-auto drop-shadow-2xl md:h-72"
                 animate={{
                   y: [0, -12, 0],
                   rotate: [0, 3, -3, 0],
@@ -214,16 +214,20 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.6 }}
-              className="mt-8 text-center"
+              className="mt-6 text-center md:mt-8"
             >
-              <h1 className="mb-3 text-6xl font-bold tracking-tight text-white">ZUGZAG</h1>
+              <h1 className="mb-3 text-3xl font-bold tracking-tight text-white md:mb-4 md:text-5xl lg:text-6xl">
+                ZUGZAG
+              </h1>
               <motion.div
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ delay: 0.5, duration: 0.5 }}
-                className="mx-auto h-1 w-32 rounded-full bg-gradient-to-r from-orange-500 to-cyan-400"
+                className="mx-auto h-1 w-20 rounded-full bg-gradient-to-r from-orange-500 to-cyan-400 md:w-28 lg:w-32"
               />
-              <p className="mt-4 text-lg text-zinc-400">클라이밍 크루의 새로운 시작</p>
+              <p className="mt-3 text-sm text-zinc-400 md:mt-4 md:text-base lg:text-lg">
+                클라이밍 크루의 새로운 시작
+              </p>
             </motion.div>
           </motion.div>
         )}
@@ -235,9 +239,9 @@ export default function LandingPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, y: -50 }}
             transition={{ duration: 0.5 }}
-            className="relative z-10 flex min-h-screen items-center justify-center px-6"
+            className="relative z-10 flex min-h-screen items-center justify-center px-4 md:px-6"
           >
-            <div className="grid max-w-4xl gap-6 md:grid-cols-3">
+            <div className="grid w-full max-w-4xl gap-4 md:grid-cols-3 md:gap-6">
               {[
                 {
                   icon: Mountain,
@@ -256,7 +260,7 @@ export default function LandingPage() {
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.15, duration: 0.5 }}
-                  className="group relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-sm"
+                  className="group relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-sm md:p-7"
                 >
                   {/* Hover gradient effect */}
                   <motion.div
@@ -267,8 +271,10 @@ export default function LandingPage() {
                     }}
                   />
 
-                  <feature.icon className="mb-4 h-10 w-10 text-orange-500" />
-                  <h3 className="mb-2 text-xl font-semibold text-white">{feature.title}</h3>
+                  <feature.icon className="mb-3 h-10 w-10 text-orange-500 md:mb-4 md:h-12 md:w-12" />
+                  <h3 className="mb-2 text-base font-semibold text-white md:text-lg lg:text-xl">
+                    {feature.title}
+                  </h3>
                   <p className="text-sm text-zinc-400">{feature.desc}</p>
                 </motion.div>
               ))}
@@ -282,14 +288,14 @@ export default function LandingPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6 }}
-            className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6"
+            className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 md:px-6"
           >
             {/* Character floating */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
-              className="relative mb-8"
+              className="relative mb-6 md:mb-8"
             >
               <motion.div
                 className="absolute inset-0 -z-10 scale-150 blur-3xl"
@@ -311,7 +317,7 @@ export default function LandingPage() {
               <motion.img
                 src="/zugzag-character.png"
                 alt="ZUGZAG Character"
-                className="h-56 w-auto drop-shadow-2xl"
+                className="h-40 w-auto drop-shadow-2xl md:h-56"
                 animate={{
                   y: [0, -10, 0],
                 }}
@@ -330,15 +336,21 @@ export default function LandingPage() {
               transition={{ delay: 0.2 }}
               className="text-center"
             >
-              <h1 className="mb-3 text-5xl font-bold text-white md:text-6xl">ZUGZAG</h1>
+              <h1 className="mb-3 text-3xl font-bold text-white md:mb-4 md:text-4xl lg:text-5xl xl:text-6xl">
+                ZUGZAG
+              </h1>
               <motion.div
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ delay: 0.4, duration: 0.5 }}
-                className="mx-auto mb-6 h-1 w-40 rounded-full bg-gradient-to-r from-orange-500 to-cyan-400"
+                className="mx-auto mb-4 h-1 w-24 rounded-full bg-gradient-to-r from-orange-500 to-cyan-400 md:mb-6 md:w-32 lg:w-40"
               />
-              <p className="mb-2 text-xl text-zinc-300">함께 오르는 즐거움</p>
-              <p className="text-base text-zinc-500">크루원들과 함께 더 높은 곳으로</p>
+              <p className="mb-1 text-base text-zinc-300 md:mb-2 md:text-lg lg:text-xl">
+                함께 오르는 즐거움
+              </p>
+              <p className="text-xs text-zinc-500 md:text-sm lg:text-base">
+                크루원들과 함께 더 높은 곳으로
+              </p>
             </motion.div>
 
             {/* CTA Button */}
@@ -346,11 +358,11 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="mt-12 w-full max-w-md"
+              className="mt-8 w-full max-w-md px-2 md:mt-10 lg:mt-12"
             >
               <motion.button
                 onClick={handleStartClick}
-                className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-5 text-lg font-semibold text-white shadow-2xl"
+                className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3 text-sm font-semibold text-white shadow-2xl md:px-7 md:py-3.5 md:text-base"
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -377,7 +389,7 @@ export default function LandingPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.7 }}
-                className="mt-6 text-center text-sm text-zinc-500"
+                className="mt-4 text-center text-sm text-zinc-500 md:mt-6 md:text-base"
               >
                 이미 계정이 있으신가요?{" "}
                 <button
@@ -394,12 +406,12 @@ export default function LandingPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9 }}
-              className="mt-16 flex gap-2"
+              className="mt-12 flex gap-2 md:mt-16"
             >
               {[0, 1, 2, 3].map((i) => (
                 <motion.div
                   key={i}
-                  className="h-1 w-8 rounded-full bg-zinc-800"
+                  className="h-1 w-6 rounded-full bg-zinc-800 md:w-8"
                   animate={{
                     backgroundColor:
                       i === 3
