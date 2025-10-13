@@ -25,6 +25,8 @@ const eslintConfig = [
       "dist/**",
       "coverage/**",
       ".vercel/**",
+      "scripts/**",
+      "docs/**",
     ],
   },
   {
@@ -96,6 +98,7 @@ const eslintConfig = [
       // 기타 유용한 규칙들
       "@typescript-eslint/no-unused-vars": "off", // unused-imports로 대체
       "no-console": ["warn", { allow: ["warn", "error"] }],
+      "react-hooks/set-state-in-effect": "off", // Mock 데이터 로딩 시 필요
     },
   },
   // Prettier와 충돌하는 규칙 비활성화
