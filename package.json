@@ -14,16 +14,19 @@
     "prepare": "husky",
     "collect:gyms": "tsx scripts/collect-gym-handles.ts",
     "collect:instagram": "tsx scripts/collect-instagram.ts",
-    "update:handles": "tsx scripts/update-instagram-handles.ts"
+    "update:handles": "tsx scripts/update-instagram-handles.ts",
+    "db:types": "npx supabase gen types typescript --project-id smeirmdnnvgafpawfwlf > src/lib/supabase/database.types.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.58.0",
+    "@tanstack/react-query": "^5.90.3",
     "framer-motion": "^12.23.22",
     "lucide-react": "^0.545.0",
     "next": "15.5.4",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "recharts": "^3.2.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.1.0",
