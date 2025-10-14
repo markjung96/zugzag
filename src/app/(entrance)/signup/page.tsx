@@ -3,24 +3,27 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, Mail, Lock, User, Loader2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, Suspense } from "react";
 
 import { useToast } from "@/components/toast-provider";
 import { signUpWithEmail, signInWithGoogle, signInWithGithub } from "@/lib/auth/auth-helpers";
 
-export default function SignUpPage() {
+function SignUpContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [nickname, setNickname] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteCode = searchParams.get("invite"); // 초대 코드 가져오기
   const toast = useToast();
 
   const validateForm = () => {
-    if (!email || !password || !confirmPassword || !fullName) {
+    if (!email || !password || !confirmPassword || !fullName || !nickname) {
       toast.error("모든 필드를 입력해주세요.");
       return false;
     }
@@ -56,14 +59,16 @@ export default function SignUpPage() {
     try {
       await signUpWithEmail(email, password, {
         full_name: fullName,
+        nickname: nickname,
       });
 
-      toast.success("가입이 완료되었습니다! 이메일을 확인해주세요.");
+      toast.success("가입이 완료되었습니다!");
       setSuccess(true);
 
-      // 2초 후 로그인 페이지로 리다이렉트
+      // 2초 후 온보딩 페이지로 리다이렉트 (초대 코드가 있으면 전달)
       setTimeout(() => {
-        router.push("/login");
+        const onboardingUrl = inviteCode ? `/onboarding?invite=${inviteCode}` : "/onboarding";
+        router.push(onboardingUrl);
       }, 2000);
     } catch (err: unknown) {
       console.error("회원가입 실패:", err);
@@ -153,7 +158,7 @@ export default function SignUpPage() {
               transition={{ delay: 0.4 }}
               className="mb-2 text-sm text-zinc-400 md:text-base"
             >
-              이메일을 확인하여 계정을 인증해주세요.
+              프로필을 완성하고 크루를 선택해주세요!
             </motion.p>
 
             <motion.p
@@ -162,7 +167,7 @@ export default function SignUpPage() {
               transition={{ delay: 0.5 }}
               className="text-xs text-zinc-500 md:text-sm lg:text-base"
             >
-              잠시 후 로그인 페이지로 이동합니다...
+              잠시 후 온보딩 페이지로 이동합니다...
             </motion.p>
           </motion.div>
         </div>
@@ -334,6 +339,27 @@ export default function SignUpPage() {
                     onChange={(e) => setFullName(e.target.value)}
                     className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 pr-3 pl-10 text-sm text-white placeholder-zinc-500 backdrop-blur-sm transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none md:py-3.5 md:pr-4 md:pl-12 md:text-base"
                     placeholder="홍길동"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="nickname"
+                  className="mb-1.5 block text-sm font-medium text-zinc-300 md:mb-2 md:text-base"
+                >
+                  닉네임
+                </label>
+                <div className="relative">
+                  <User className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-zinc-500 md:left-4 md:h-6 md:w-6" />
+                  <input
+                    type="text"
+                    id="nickname"
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 pr-3 pl-10 text-sm text-white placeholder-zinc-500 backdrop-blur-sm transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none md:py-3.5 md:pr-4 md:pl-12 md:text-base"
+                    placeholder="클라이머123"
                     required
                   />
                 </div>
@@ -514,5 +540,19 @@ export default function SignUpPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-zinc-950">
+          <Loader2 className="h-10 w-10 animate-spin text-orange-500" />
+        </div>
+      }
+    >
+      <SignUpContent />
+    </Suspense>
   );
 }

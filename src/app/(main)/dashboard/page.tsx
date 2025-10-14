@@ -11,48 +11,75 @@ import {
   ChevronRight,
   Plus,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { mockEvents, mockCrews, mockAttendances, currentUser } from "@/lib/mock";
-import { mockCrewMembers } from "@/lib/mock/crews";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+
+import { useUserCrewsQuery } from "../crews/_hooks/use-user-crews-query";
+import { useSchedulesQuery } from "../schedules/_hooks/use-schedules-query";
 
 export default function DashboardPage() {
   const router = useRouter();
 
-  // 사용자가 속한 크루 찾기
-  const userCrews = mockCrewMembers
-    .filter((m) => m.user_id === currentUser.id)
-    .map((m) => mockCrews.find((c) => c.id === m.crew_id))
-    .filter(Boolean);
+  // React Query로 데이터 조회
+  const { data: currentUserData, isLoading: isLoadingUser } = useCurrentUser();
+  const { data: userCrewsData, isLoading: isLoadingCrews } = useUserCrewsQuery();
+  const { data: schedulesData, isLoading: isLoadingSchedules } = useSchedulesQuery({
+    limit: 100, // Dashboard에서는 더 많은 일정을 가져옴
+  });
 
-  // 사용자 크루의 일정들
-  const crewEventIds = userCrews.map((c) => c!.id);
-  const userEvents = mockEvents.filter((e) => crewEventIds.includes(e.crew_id));
+  // 인증되지 않은 경우 로그인 페이지로
+  if (!isLoadingUser && !currentUserData) {
+    router.push("/login");
+    return null;
+  }
+
+  if (isLoadingUser || isLoadingCrews || isLoadingSchedules) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
+        <div className="text-center">
+          <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+          <p className="text-zinc-400">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const user = currentUserData?.user;
+  const profile = currentUserData?.profile;
+  const crews = userCrewsData?.crews || [];
+  const allSchedules = schedulesData?.schedules || [];
+
+  // 사용자 크루의 일정만 필터링
+  const crewIds = new Set(crews.map((c) => c.crew.id));
+  const schedules = allSchedules.filter((s) => s.crew_id && crewIds.has(s.crew_id));
 
   // 다가오는 일정
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const upcomingEvents = userEvents
+  const upcomingSchedules = schedules
     .filter((e) => new Date(e.event_date) >= today && !e.is_cancelled)
     .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
     .slice(0, 3);
 
-  // 사용자의 참석 정보
-  const userAttendances = mockAttendances.filter((a) => a.user_id === currentUser.id);
-  const attendedCount = userAttendances.filter((a) => a.checked_in_at).length;
-  const attendingCount = userAttendances.filter((a) => a.status === "attending").length;
-  const thisMonthEvents = userEvents.filter((e) => {
+  // 사용자 통계 (간단 버전 - 참석 정보는 별도 API 필요)
+  const thisMonthSchedules = schedules.filter((e) => {
     const eventDate = new Date(e.event_date);
     return (
       eventDate.getMonth() === today.getMonth() && eventDate.getFullYear() === today.getFullYear()
     );
   });
 
+  // TODO: 참석 정보를 위한 별도 API 구현 필요
+  const attendedCount = 0;
+  const attendingCount = 0;
+
   // 인기 암장 통계
-  const gymStats = userEvents.reduce(
-    (acc, event) => {
-      event.phases.forEach((phase) => {
+  const gymStats = schedules.reduce(
+    (acc, schedule) => {
+      schedule.phases.forEach((phase) => {
         if (phase.gym) {
           if (!acc[phase.gym.id]) {
             acc[phase.gym.id] = {
@@ -65,7 +92,10 @@ export default function DashboardPage() {
       });
       return acc;
     },
-    {} as Record<string, { gym: { id: string; name: string; address: string }; count: number }>,
+    {} as Record<
+      string,
+      { gym: { id: string; name: string; address: string | null }; count: number }
+    >,
   );
 
   const topGyms = Object.values(gymStats)
@@ -81,13 +111,13 @@ export default function DashboardPage() {
     },
     {
       name: "가입 크루",
-      value: userCrews.length.toString(),
+      value: crews.length.toString(),
       icon: Users,
       color: "from-cyan-400 to-cyan-500",
     },
     {
       name: "이번 달 일정",
-      value: thisMonthEvents.length.toString(),
+      value: thisMonthSchedules.length.toString(),
       icon: Calendar,
       color: "from-purple-500 to-purple-600",
     },
@@ -103,10 +133,39 @@ export default function DashboardPage() {
     <div className="min-h-full bg-zinc-950 p-4 md:p-8">
       {/* Welcome Section */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <h2 className="mb-2 text-2xl font-bold text-white md:text-3xl">
-          안녕하세요, {currentUser.nickname || currentUser.full_name}님! 👋
-        </h2>
-        <p className="text-zinc-400">오늘도 즐거운 클라이밍 되세요</p>
+        <div className="flex items-center gap-4">
+          {profile?.avatar_url || user?.user_metadata?.avatar_url ? (
+            <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-orange-500">
+              <Image
+                src={profile?.avatar_url || user?.user_metadata?.avatar_url}
+                alt={profile?.nickname || profile?.full_name || "사용자"}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-orange-500 bg-gradient-to-r from-orange-500 to-cyan-400 text-2xl font-bold text-white">
+              {
+                (profile?.nickname ||
+                  profile?.full_name ||
+                  user?.user_metadata?.full_name ||
+                  "크")?.[0]
+              }
+            </div>
+          )}
+          <div>
+            <h2 className="mb-1 text-2xl font-bold text-white md:text-3xl">
+              안녕하세요,{" "}
+              {profile?.nickname ||
+                profile?.full_name ||
+                user?.user_metadata?.full_name ||
+                "크루원"}
+              님! 👋
+            </h2>
+            <p className="text-zinc-400">오늘도 즐거운 클라이밍 되세요</p>
+          </div>
+        </div>
       </motion.div>
 
       {/* Stats Grid */}
@@ -156,53 +215,46 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {upcomingEvents.length === 0 ? (
+          {upcomingSchedules.length === 0 ? (
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-12 text-center backdrop-blur-xl">
               <Calendar className="mx-auto mb-3 h-12 w-12 text-zinc-600" />
               <p className="text-sm text-zinc-400">다가오는 일정이 없습니다</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {upcomingEvents.map((event, index) => {
-                const userAttendance = userAttendances.find((a) => a.event_id === event.id);
+              {upcomingSchedules.map((schedule, index) => {
                 return (
                   <motion.div
-                    key={event.id}
+                    key={schedule.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 + index * 0.1 }}
-                    onClick={() => router.push(`/events/${event.id}`)}
+                    onClick={() => router.push(`/schedules/${schedule.id}`)}
                     className="group cursor-pointer rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-xl transition-all hover:border-orange-500/50 hover:bg-zinc-900"
                   >
                     <div className="mb-3 flex items-start justify-between">
                       <div className="flex-1">
                         <div className="mb-1 flex items-center gap-2">
-                          <h4 className="text-lg font-semibold text-white">{event.title}</h4>
-                          {userAttendance && (
-                            <span className="rounded-lg bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-500">
-                              참석
-                            </span>
-                          )}
+                          <h4 className="text-lg font-semibold text-white">{schedule.title}</h4>
                         </div>
-                        <div className="mb-2 text-xs text-zinc-500">{event.crew.name}</div>
+                        <div className="mb-2 text-xs text-zinc-500">
+                          {schedule.crew?.name || "Unknown Crew"}
+                        </div>
                         <div className="flex items-center gap-2 text-sm text-zinc-400">
                           <Calendar className="h-4 w-4" />
-                          {new Date(event.event_date).toLocaleDateString("ko-KR", {
+                          {new Date(schedule.event_date).toLocaleDateString("ko-KR", {
                             month: "long",
                             day: "numeric",
                             weekday: "short",
                           })}{" "}
-                          {event.phases[0]?.start_time}
+                          {schedule.phases[0]?.start_time}
                         </div>
                       </div>
-                      <span className="rounded-full bg-orange-500/10 px-3 py-1 text-sm font-medium text-orange-500">
-                        {event.stats?.attending_count || 0}명
-                      </span>
                     </div>
-                    {event.phases[0]?.gym && (
+                    {schedule.phases[0]?.gym && (
                       <div className="flex items-center gap-2 text-sm text-zinc-400">
                         <MapPin className="h-4 w-4" />
-                        {event.phases[0].gym.name}
+                        {schedule.phases[0].gym.name}
                       </div>
                     )}
                   </motion.div>
@@ -212,7 +264,7 @@ export default function DashboardPage() {
           )}
 
           <motion.button
-            onClick={() => router.push("/events/create")}
+            onClick={() => router.push("/schedules/create")}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 py-3 text-sm font-medium text-white transition-all hover:bg-zinc-800"
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
@@ -239,7 +291,7 @@ export default function DashboardPage() {
               </Link>
             </div>
 
-            {userCrews.length === 0 ? (
+            {crews.length === 0 ? (
               <div className="py-8 text-center">
                 <Users className="mx-auto mb-3 h-12 w-12 text-zinc-600" />
                 <p className="mb-4 text-sm text-zinc-400">가입된 크루가 없습니다</p>
@@ -252,18 +304,18 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {userCrews.map((crew, idx) => (
+                {crews.map((crewMembership, idx) => (
                   <motion.div
-                    key={crew!.id}
+                    key={crewMembership.crew.id}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.6 + idx * 0.1 }}
-                    onClick={() => router.push(`/crews/${crew!.id}`)}
+                    onClick={() => router.push(`/crews/${crewMembership.crew.id}`)}
                     className="flex cursor-pointer items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 p-4 transition-all hover:border-zinc-700"
                   >
                     <div>
-                      <div className="font-semibold text-white">{crew!.name}</div>
-                      <div className="text-sm text-zinc-400">{crew!.member_count}명</div>
+                      <div className="font-semibold text-white">{crewMembership.crew.name}</div>
+                      <div className="text-sm text-zinc-400">멤버</div>
                     </div>
                     <ChevronRight className="h-5 w-5 text-zinc-600" />
                   </motion.div>
@@ -315,49 +367,11 @@ export default function DashboardPage() {
               <TrendingUp className="h-5 w-5 text-green-500" />
             </div>
             <div className="mb-2 flex items-end justify-between text-sm text-zinc-400">
-              <span>참석률</span>
-              <span className="text-2xl font-bold text-white">
-                {thisMonthEvents.length > 0
-                  ? Math.round(
-                      (userAttendances.filter(
-                        (a) => a.checked_in_at && thisMonthEvents.some((e) => e.id === a.event_id),
-                      ).length /
-                        thisMonthEvents.length) *
-                        100,
-                    )
-                  : 0}
-                %
-              </span>
-            </div>
-            <div className="relative h-3 overflow-hidden rounded-full bg-zinc-800">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{
-                  width: `${
-                    thisMonthEvents.length > 0
-                      ? Math.round(
-                          (userAttendances.filter(
-                            (a) =>
-                              a.checked_in_at && thisMonthEvents.some((e) => e.id === a.event_id),
-                          ).length /
-                            thisMonthEvents.length) *
-                            100,
-                        )
-                      : 0
-                  }%`,
-                }}
-                transition={{ delay: 1, duration: 1, ease: "easeOut" }}
-                className="h-full rounded-full bg-gradient-to-r from-orange-500 to-cyan-400"
-              />
+              <span>이번 달 일정</span>
+              <span className="text-2xl font-bold text-white">{thisMonthSchedules.length}</span>
             </div>
             <p className="mt-3 text-xs text-zinc-500">
-              이번 달 {thisMonthEvents.length}개 일정 중{" "}
-              {
-                userAttendances.filter(
-                  (a) => a.checked_in_at && thisMonthEvents.some((e) => e.id === a.event_id),
-                ).length
-              }
-              개 참석 💪
+              이번 달 일정 {thisMonthSchedules.length}개 💪
             </p>
           </motion.div>
         </motion.div>

@@ -4,13 +4,33 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mountain, Users, TrendingUp, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import { createClient } from "@/lib/supabase/client";
 
 export default function LandingPage() {
   const [stage, setStage] = useState<"splash" | "intro" | "features" | "cta">("splash");
   const router = useRouter();
+
+  // 타이머 관리용 ref
+  const timersRef = useRef<NodeJS.Timeout[]>([]);
+
+  // 타이머 정리 함수
+  const clearAllTimers = () => {
+    timersRef.current.forEach((timer) => clearTimeout(timer));
+    timersRef.current = [];
+  };
+
+  // 타이머 설정 함수
+  const setTimer = (callback: () => void, delay: number) => {
+    const timer = setTimeout(() => {
+      // 타이머 실행 시 배열에서 제거
+      timersRef.current = timersRef.current.filter((t) => t !== timer);
+      callback();
+    }, delay);
+    timersRef.current.push(timer);
+    return timer;
+  };
 
   // 파티클 속성을 컴포넌트 마운트 시 한 번만 생성
   const [particles] = useState(() =>
@@ -46,6 +66,7 @@ export default function LandingPage() {
     if (stage === "cta") return;
 
     const skipToEnd = () => {
+      clearAllTimers();
       setStage("cta");
     };
 
@@ -63,25 +84,26 @@ export default function LandingPage() {
       window.removeEventListener("click", skipToEnd);
       window.removeEventListener("touchstart", skipToEnd);
       window.removeEventListener("keydown", handleKeyDown);
+      clearAllTimers();
     };
   }, [stage]);
 
   useEffect(() => {
-    const splashTimer = setTimeout(() => setStage("intro"), 2000);
-    return () => clearTimeout(splashTimer);
+    const timer = setTimer(() => setStage("intro"), 2000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     if (stage === "intro") {
-      const introTimer = setTimeout(() => setStage("features"), 2500);
-      return () => clearTimeout(introTimer);
+      const timer = setTimer(() => setStage("features"), 2500);
+      return () => clearTimeout(timer);
     }
   }, [stage]);
 
   useEffect(() => {
     if (stage === "features") {
-      const featuresTimer = setTimeout(() => setStage("cta"), 2500);
-      return () => clearTimeout(featuresTimer);
+      const timer = setTimer(() => setStage("cta"), 2500);
+      return () => clearTimeout(timer);
     }
   }, [stage]);
 
