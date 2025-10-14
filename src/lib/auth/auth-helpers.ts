@@ -64,6 +64,7 @@ export const signUpWithEmail = async (
   password: string,
   metadata?: {
     full_name?: string;
+    nickname?: string;
     avatar_url?: string;
   },
 ) => {

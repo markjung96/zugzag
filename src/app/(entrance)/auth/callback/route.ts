@@ -26,8 +26,30 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(`${requestUrl.origin}/login?error=auth_callback_failed`);
       }
 
-      // 로그인 성공 후 대시보드로 리다이렉트
-      return NextResponse.redirect(`${requestUrl.origin}/dashboard`);
+      // 사용자 정보 확인
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        return NextResponse.redirect(`${requestUrl.origin}/login?error=user_not_found`);
+      }
+
+      // 프로필 조회
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("climbing_level")
+        .eq("id", user.id)
+        .single();
+
+      // climbing_level이 없으면 신규 유저 → 온보딩
+      // climbing_level이 있으면 기존 유저 → 대시보드
+      const redirectUrl =
+        !profile || !profile.climbing_level
+          ? `${requestUrl.origin}/onboarding`
+          : `${requestUrl.origin}/dashboard`;
+
+      return NextResponse.redirect(redirectUrl);
     } catch (error) {
       console.error("OAuth 콜백 처리 오류:", error);
       return NextResponse.redirect(`${requestUrl.origin}/login?error=unexpected_error`);

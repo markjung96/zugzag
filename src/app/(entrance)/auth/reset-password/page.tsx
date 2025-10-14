@@ -1,13 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, Lock, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Lock, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 import { useToast } from "@/components/toast-provider";
-import { createClient } from "@/lib/supabase/client";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -15,21 +14,27 @@ export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isValidToken, setIsValidToken] = useState(false);
+  const [isCheckingToken, setIsCheckingToken] = useState(true);
   const router = useRouter();
   const toast = useToast();
 
   useEffect(() => {
     // URL에서 토큰 확인
     const checkToken = async () => {
-      const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      try {
+        const response = await fetch("/api/auth/session");
+        const data = await response.json();
 
-      if (session) {
-        setIsValidToken(true);
-      } else {
-        toast.error("유효하지 않거나 만료된 링크입니다.");
+        if (data.isValid && data.session) {
+          setIsValidToken(true);
+        } else {
+          toast.error("유효하지 않거나 만료된 링크입니다.");
+        }
+      } catch (error) {
+        console.error("Failed to check token:", error);
+        toast.error("토큰 확인 중 오류가 발생했습니다.");
+      } finally {
+        setIsCheckingToken(false);
       }
     };
 
@@ -65,12 +70,18 @@ export default function ResetPasswordPage() {
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password,
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password }),
       });
 
-      if (updateError) throw updateError;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to reset password");
+      }
 
       toast.success("비밀번호가 성공적으로 변경되었습니다!");
       setSuccess(true);
@@ -81,17 +92,36 @@ export default function ResetPasswordPage() {
       }, 2000);
     } catch (err: unknown) {
       console.error("비밀번호 재설정 실패:", err);
-      toast.error("비밀번호 재설정에 실패했습니다. 다시 시도해주세요.");
+      toast.error(err instanceof Error ? err.message : "비밀번호 재설정에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!isValidToken) {
+  if (isCheckingToken) {
     return (
       <div className="relative min-h-screen overflow-hidden bg-zinc-950">
         <div className="relative z-10 flex min-h-screen items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!isValidToken) {
+    return (
+      <div className="relative min-h-screen overflow-hidden bg-zinc-950">
+        <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
+          <div className="text-center">
+            <AlertCircle className="mx-auto mb-4 h-16 w-16 text-red-500" />
+            <h2 className="mb-2 text-xl font-bold text-white">유효하지 않은 링크</h2>
+            <p className="mb-6 text-zinc-400">링크가 만료되었거나 유효하지 않습니다.</p>
+            <Link href="/forgot-password">
+              <button className="rounded-xl bg-orange-500 px-6 py-3 font-medium text-white transition-colors hover:bg-orange-600">
+                비밀번호 재설정 다시 시도
+              </button>
+            </Link>
+          </div>
         </div>
       </div>
     );
