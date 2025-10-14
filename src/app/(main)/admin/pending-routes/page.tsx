@@ -14,38 +14,15 @@ import {
   XCircle,
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
-interface PendingRoute {
-  id: string;
-  gym_id: string;
-  gym: {
-    id: string;
-    name: string;
-    address: string;
-  };
-  instagram_post_id: string;
-  instagram_url: string;
-  caption: string;
-  image_url: string;
-  posted_at: string;
-  parsed_setter_name: string | null;
-  parsed_difficulty: string | null;
-  parsed_color: string | null;
-  parsed_difficulty_normalized: number | null;
-  parsed_set_date: string | null;
-  parsed_wall_section: string | null;
-  parsed_route_type: string | null;
-  parsed_tags: string[];
-  parsing_confidence: number;
-  status: "pending" | "needs_review" | "approved" | "rejected";
-  reviewed_by: string | null;
-  reviewed_at: string | null;
-  rejection_reason: string | null;
-  created_at: string;
-}
+import { useToast } from "@/components/toast-provider";
+import type { PendingRouteWithGym } from "@/lib/api/admin-helpers";
+
+type PendingRoute = PendingRouteWithGym;
 
 export default function PendingRoutesPage() {
+  const toast = useToast();
   const [routes, setRoutes] = useState<PendingRoute[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<string>("pending");
@@ -57,13 +34,7 @@ export default function PendingRoutesPage() {
   const [offset, setOffset] = useState(0);
   const limit = 20;
 
-  // 데이터 로드
-  useEffect(() => {
-    fetchRoutes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStatus, offset]);
-
-  const fetchRoutes = async () => {
+  const fetchRoutes = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -86,7 +57,12 @@ export default function PendingRoutesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedStatus, offset, limit]);
+
+  // 데이터 로드
+  useEffect(() => {
+    fetchRoutes();
+  }, [fetchRoutes]);
 
   // 승인
   const handleApprove = async (id: string) => {
@@ -98,16 +74,16 @@ export default function PendingRoutesPage() {
       });
 
       if (response.ok) {
-        alert("승인되었습니다!");
+        toast.success("승인되었습니다!");
         fetchRoutes();
         setShowDetailModal(false);
       } else {
         const data = await response.json();
-        alert(`승인 실패: ${data.error}`);
+        toast.error(`승인 실패: ${data.error}`);
       }
     } catch (error) {
       console.error("Error approving route:", error);
-      alert("승인 중 오류가 발생했습니다.");
+      toast.error("승인 중 오류가 발생했습니다.");
     }
   };
 
@@ -124,16 +100,16 @@ export default function PendingRoutesPage() {
       });
 
       if (response.ok) {
-        alert("거부되었습니다.");
+        toast.success("거부되었습니다.");
         fetchRoutes();
         setShowDetailModal(false);
       } else {
         const data = await response.json();
-        alert(`거부 실패: ${data.error}`);
+        toast.error(`거부 실패: ${data.error}`);
       }
     } catch (error) {
       console.error("Error rejecting route:", error);
-      alert("거부 중 오류가 발생했습니다.");
+      toast.error("거부 중 오류가 발생했습니다.");
     }
   };
 
@@ -147,16 +123,16 @@ export default function PendingRoutesPage() {
       });
 
       if (response.ok) {
-        alert("삭제되었습니다.");
+        toast.success("삭제되었습니다.");
         fetchRoutes();
         setShowDetailModal(false);
       } else {
         const data = await response.json();
-        alert(`삭제 실패: ${data.error}`);
+        toast.error(`삭제 실패: ${data.error}`);
       }
     } catch (error) {
       console.error("Error deleting route:", error);
-      alert("삭제 중 오류가 발생했습니다.");
+      toast.error("삭제 중 오류가 발생했습니다.");
     }
   };
 
@@ -203,7 +179,7 @@ export default function PendingRoutesPage() {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      route.gym.name.toLowerCase().includes(query) ||
+      route.gym?.name.toLowerCase().includes(query) ||
       route.parsed_setter_name?.toLowerCase().includes(query) ||
       route.parsed_difficulty?.toLowerCase().includes(query)
     );
@@ -276,7 +252,7 @@ export default function PendingRoutesPage() {
             },
             {
               label: "평균 신뢰도",
-              value: `${Math.round(routes.reduce((sum, r) => sum + r.parsing_confidence, 0) / routes.length || 0)}%`,
+              value: `${Math.round(routes.reduce((sum, r) => sum + (r.parsing_confidence || 0), 0) / routes.length || 0)}%`,
               color: "green",
             },
           ].map((stat, idx) => (
@@ -336,8 +312,12 @@ export default function PendingRoutesPage() {
                     <div className="flex-1">
                       <div className="mb-2 flex items-start justify-between">
                         <div>
-                          <h3 className="text-lg font-semibold text-white">{route.gym.name}</h3>
-                          <p className="text-sm text-zinc-400">{route.gym.address}</p>
+                          <h3 className="text-lg font-semibold text-white">
+                            {route.gym?.name || "Unknown Gym"}
+                          </h3>
+                          <p className="text-sm text-zinc-400">
+                            {route.gym?.address || "No address"}
+                          </p>
                         </div>
                         <span
                           className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(route.status)}`}
@@ -371,9 +351,9 @@ export default function PendingRoutesPage() {
                         <div>
                           <span className="text-xs text-zinc-500">신뢰도</span>
                           <p
-                            className={`text-sm font-medium ${getConfidenceColor(route.parsing_confidence)}`}
+                            className={`text-sm font-medium ${getConfidenceColor(route.parsing_confidence || 0)}`}
                           >
-                            {route.parsing_confidence}%
+                            {route.parsing_confidence || 0}%
                           </p>
                         </div>
                       </div>
@@ -484,8 +464,10 @@ export default function PendingRoutesPage() {
               <div className="space-y-4">
                 <div>
                   <h3 className="mb-2 text-sm font-medium text-zinc-400">암장</h3>
-                  <p className="text-white">{selectedRoute.gym.name}</p>
-                  <p className="text-sm text-zinc-400">{selectedRoute.gym.address}</p>
+                  <p className="text-white">{selectedRoute.gym?.name || "Unknown Gym"}</p>
+                  <p className="text-sm text-zinc-400">
+                    {selectedRoute.gym?.address || "No address"}
+                  </p>
                 </div>
 
                 <div>
@@ -513,32 +495,34 @@ export default function PendingRoutesPage() {
                       <li className="text-zinc-300">
                         타입: {selectedRoute.parsed_route_type || "-"}
                       </li>
-                      <li className={getConfidenceColor(selectedRoute.parsing_confidence)}>
-                        신뢰도: {selectedRoute.parsing_confidence}%
+                      <li className={getConfidenceColor(selectedRoute.parsing_confidence || 0)}>
+                        신뢰도: {selectedRoute.parsing_confidence || 0}%
                       </li>
                     </ul>
                   </div>
 
-                  {selectedRoute.parsed_tags && selectedRoute.parsed_tags.length > 0 && (
-                    <div>
-                      <h3 className="mb-2 text-sm font-medium text-zinc-400">태그</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedRoute.parsed_tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="rounded-full bg-zinc-800 px-2 py-1 text-xs text-zinc-300"
-                          >
-                            #{tag}
-                          </span>
-                        ))}
+                  {selectedRoute.parsed_tags &&
+                    Array.isArray(selectedRoute.parsed_tags) &&
+                    selectedRoute.parsed_tags.length > 0 && (
+                      <div>
+                        <h3 className="mb-2 text-sm font-medium text-zinc-400">태그</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedRoute.parsed_tags.map((tag: string) => (
+                            <span
+                              key={tag}
+                              className="rounded-full bg-zinc-800 px-2 py-1 text-xs text-zinc-300"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
 
                 <div className="flex gap-2">
                   <a
-                    href={selectedRoute.instagram_url}
+                    href={selectedRoute.instagram_url || "#"}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="rounded-lg bg-zinc-800 px-4 py-2 text-sm text-white transition-colors hover:bg-zinc-700"

@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Edit, Palette, Plus, Save, Trash2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 interface ColorMapping {
   id: string;
@@ -40,14 +40,7 @@ export default function ColorMappingsPage() {
     notes: "",
   });
 
-  // 데이터 로드
-  useEffect(() => {
-    fetchGyms();
-    fetchMappings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedGym]);
-
-  const fetchGyms = async () => {
+  const fetchGyms = useCallback(async () => {
     try {
       const response = await fetch("/api/gyms?limit=100");
       const data = await response.json();
@@ -57,9 +50,9 @@ export default function ColorMappingsPage() {
     } catch (error) {
       console.error("Error fetching gyms:", error);
     }
-  };
+  }, []);
 
-  const fetchMappings = async () => {
+  const fetchMappings = useCallback(async () => {
     setLoading(true);
     try {
       const params = selectedGym ? `?gym_id=${selectedGym}` : "";
@@ -76,7 +69,16 @@ export default function ColorMappingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedGym]);
+
+  // 데이터 로드
+  useEffect(() => {
+    fetchGyms();
+  }, [fetchGyms]);
+
+  useEffect(() => {
+    fetchMappings();
+  }, [fetchMappings]);
 
   // 추가
   const handleAdd = async () => {
