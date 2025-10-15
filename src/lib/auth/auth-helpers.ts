@@ -10,9 +10,10 @@ export const signInWithGoogle = async (redirectTo?: string) => {
     provider: "google",
     options: {
       redirectTo: redirectTo || `${window.location.origin}/auth/callback`,
+      skipBrowserRedirect: false, // 명시적으로 브라우저 리다이렉트 활성화
       queryParams: {
         access_type: "offline",
-        prompt: "consent",
+        prompt: "select_account", // 'consent' 대신 'select_account' 사용
       },
     },
   });
