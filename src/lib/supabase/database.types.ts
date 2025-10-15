@@ -954,11 +954,17 @@ export type Database = {
           capacity: number | null
           created_at: string | null
           end_time: string | null
+          exercise_type: Database["public"]["Enums"]["exercise_type"] | null
           gym_id: string | null
           id: string
+          location_kakao_address: string | null
+          location_kakao_category: string | null
+          location_kakao_id: string | null
+          location_kakao_name: string | null
           location_text: string | null
           notes: string | null
           phase_number: number
+          phase_type: Database["public"]["Enums"]["phase_type"]
           schedule_id: string
           start_time: string
           title: string
@@ -968,11 +974,17 @@ export type Database = {
           capacity?: number | null
           created_at?: string | null
           end_time?: string | null
+          exercise_type?: Database["public"]["Enums"]["exercise_type"] | null
           gym_id?: string | null
           id?: string
+          location_kakao_address?: string | null
+          location_kakao_category?: string | null
+          location_kakao_id?: string | null
+          location_kakao_name?: string | null
           location_text?: string | null
           notes?: string | null
           phase_number: number
+          phase_type?: Database["public"]["Enums"]["phase_type"]
           schedule_id: string
           start_time: string
           title: string
@@ -982,11 +994,17 @@ export type Database = {
           capacity?: number | null
           created_at?: string | null
           end_time?: string | null
+          exercise_type?: Database["public"]["Enums"]["exercise_type"] | null
           gym_id?: string | null
           id?: string
+          location_kakao_address?: string | null
+          location_kakao_category?: string | null
+          location_kakao_id?: string | null
+          location_kakao_name?: string | null
           location_text?: string | null
           notes?: string | null
           phase_number?: number
+          phase_type?: Database["public"]["Enums"]["phase_type"]
           schedule_id?: string
           start_time?: string
           title?: string
@@ -1403,6 +1421,8 @@ export type Database = {
     }
     Enums: {
       crew_member_role: "owner" | "admin" | "member"
+      exercise_type: "climbing" | "gym" | "running" | "hiking" | "other"
+      phase_type: "exercise" | "meal" | "afterparty"
       profile_role: "owner" | "member"
     }
     CompositeTypes: {
@@ -1532,6 +1552,8 @@ export const Constants = {
   public: {
     Enums: {
       crew_member_role: ["owner", "admin", "member"],
+      exercise_type: ["climbing", "gym", "running", "hiking", "other"],
+      phase_type: ["exercise", "meal", "afterparty"],
       profile_role: ["owner", "member"],
     },
   },
