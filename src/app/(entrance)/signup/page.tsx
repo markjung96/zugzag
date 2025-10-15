@@ -4,12 +4,12 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Mail, Lock, User, Loader2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
+import { useState } from "react";
 
 import { useToast } from "@/components/toast-provider";
 import { signUpWithEmail, signInWithGoogle, signInWithGithub } from "@/lib/auth/auth-helpers";
 
-function SignUpContent() {
+export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -540,19 +540,5 @@ function SignUpContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default function SignUpPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-zinc-950">
-          <Loader2 className="h-10 w-10 animate-spin text-orange-500" />
-        </div>
-      }
-    >
-      <SignUpContent />
-    </Suspense>
   );
 }
