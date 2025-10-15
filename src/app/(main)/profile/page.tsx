@@ -5,6 +5,7 @@ import { User, Mail, Edit, TrendingUp, Calendar, Award, Target, LogOut } from "l
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
+import { useUserStatsQuery } from "@/hooks/use-user-stats-query";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { signOut } from "@/lib/auth/auth-helpers";
 
@@ -14,6 +15,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const { data: currentUserData, isLoading: isLoadingUser } = useCurrentUser();
   const { data: userCrewsData, isLoading: isLoadingCrews } = useUserCrewsQuery();
+  const { data: userStatsData, isLoading: isLoadingStats } = useUserStatsQuery();
 
   // 인증되지 않은 경우 로그인 페이지로
   if (!isLoadingUser && !currentUserData) {
@@ -21,7 +23,7 @@ export default function ProfilePage() {
     return null;
   }
 
-  if (isLoadingUser || isLoadingCrews) {
+  if (isLoadingUser || isLoadingCrews || isLoadingStats) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-950">
         <div className="text-center">
@@ -35,35 +37,47 @@ export default function ProfilePage() {
   const user = currentUserData?.user;
   const profile = currentUserData?.profile;
   const crews = userCrewsData?.crews || [];
+  const userStats = userStatsData?.stats;
 
-  // 사용자 통계 (TODO: 실제 출석 데이터 API 필요)
-  const attendedCount = 0;
-  const attendanceRate = 0;
-  const userCrewCount = crews.length;
-  const thisMonthAttendances: never[] = [];
+  // 레벨 한글 변환
+  const getLevelLabel = (level: string | null | undefined) => {
+    if (!level) return "입문";
+    switch (level) {
+      case "beginner":
+        return "입문";
+      case "intermediate":
+        return "중급";
+      case "advanced":
+        return "고급";
+      case "expert":
+        return "전문가";
+      default:
+        return "입문";
+    }
+  };
 
   const stats = [
     {
       label: "총 참석",
-      value: attendedCount,
+      value: userStats?.totalAttended || 0,
       icon: TrendingUp,
       color: "from-orange-500 to-orange-600",
     },
     {
       label: "참석률",
-      value: `${attendanceRate}%`,
+      value: `${userStats?.attendanceRate?.toFixed(1) || 0}%`,
       icon: Award,
       color: "from-green-500 to-green-600",
     },
     {
       label: "이번 달",
-      value: thisMonthAttendances.length,
-      icon: Award,
+      value: userStats?.thisMonthAttendances || 0,
+      icon: Calendar,
       color: "from-cyan-400 to-cyan-500",
     },
     {
       label: "레벨",
-      value: profile?.climbing_level || "V0",
+      value: getLevelLabel(profile?.climbing_level),
       icon: Target,
       color: "from-purple-500 to-purple-600",
     },
@@ -147,18 +161,12 @@ export default function ProfilePage() {
                 {profile?.climbing_level && (
                   <div className="flex items-center gap-1">
                     <Target className="h-4 w-4" />
-                    {profile.climbing_level === "beginner"
-                      ? "입문"
-                      : profile.climbing_level === "intermediate"
-                        ? "중급"
-                        : profile.climbing_level === "advanced"
-                          ? "고급"
-                          : "전문가"}
+                    {getLevelLabel(profile.climbing_level)}
                   </div>
                 )}
                 <div className="flex items-center gap-1">
                   <User className="h-4 w-4" />
-                  {userCrewCount}개 크루
+                  {userStats?.totalCrews || crews.length}개 크루
                 </div>
               </div>
             </div>
@@ -200,7 +208,7 @@ export default function ProfilePage() {
           </div>
         </motion.div>
 
-        {/* 활동 내역 */}
+        {/* 최근 활동 내역 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -209,10 +217,55 @@ export default function ProfilePage() {
         >
           <h2 className="mb-4 text-xl font-bold text-white">최근 활동</h2>
 
-          <div className="py-12 text-center">
-            <Calendar className="mx-auto mb-3 h-12 w-12 text-zinc-600" />
-            <p className="text-sm text-zinc-400">활동 내역 기능 개발 중</p>
-          </div>
+          {!userStats?.recentActivities || userStats.recentActivities.length === 0 ? (
+            <div className="py-12 text-center">
+              <Calendar className="mx-auto mb-3 h-12 w-12 text-zinc-600" />
+              <p className="text-sm text-zinc-400">아직 활동 내역이 없습니다</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {userStats.recentActivities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 p-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                        activity.type === "checkin"
+                          ? "bg-green-500/20 text-green-500"
+                          : activity.type === "noshow"
+                            ? "bg-red-500/20 text-red-500"
+                            : "bg-orange-500/20 text-orange-500"
+                      }`}
+                    >
+                      {activity.type === "checkin" ? (
+                        <Award className="h-5 w-5" />
+                      ) : (
+                        <Calendar className="h-5 w-5" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-medium text-white">{activity.schedule.title}</div>
+                      <div className="text-sm text-zinc-400">
+                        {activity.type === "checkin"
+                          ? "참석 완료"
+                          : activity.type === "noshow"
+                            ? "노쇼"
+                            : `RSVP: ${activity.status}`}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-sm text-zinc-500">
+                    {new Date(activity.schedule.event_date).toLocaleDateString("ko-KR", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </motion.div>
 
         {/* 로그아웃 */}

@@ -51,6 +51,32 @@ export interface TimeDistributionData {
   count: number;
 }
 
+export interface DayAttendanceRateData {
+  day: string;
+  dayOfWeek: number;
+  attendanceRate: number;
+  totalSchedules: number;
+  totalAttended: number;
+}
+
+export interface TimeAttendanceRateData {
+  timeSlot: string;
+  attendanceRate: number;
+  totalSchedules: number;
+  totalAttended: number;
+}
+
+export interface GymAttendanceRateData {
+  gym: {
+    id: string;
+    name: string;
+    address: string | null;
+  };
+  attendanceRate: number;
+  totalSchedules: number;
+  totalAttended: number;
+}
+
 export interface CrewBasicStats {
   crew: Crew;
   totalMembers: number;
@@ -60,6 +86,11 @@ export interface CrewBasicStats {
   totalAttendances: number;
   checkedInCount: number;
   attendanceRate: number;
+  // 추가 지표
+  averageAttendees: number; // 일정당 평균 참석자 수
+  noShowRate: number; // 노쇼율
+  newMemberConversionRate: number; // 신규 멤버 전환율 (가입 후 첫 참석 비율)
+  phaseDropoffRate: number; // 단계별 이탈률 (1차→2차 진행 시 이탈 비율)
 }
 
 export interface CrewAllStatsResponse extends CrewBasicStats {
@@ -68,6 +99,10 @@ export interface CrewAllStatsResponse extends CrewBasicStats {
   popularGyms: GymStat[];
   dayDistribution: DayDistributionData[];
   timeDistribution: TimeDistributionData[];
+  // 추가 통계
+  dayAttendanceRate: DayAttendanceRateData[];
+  timeAttendanceRate: TimeAttendanceRateData[];
+  gymAttendanceRate: GymAttendanceRateData[];
   recentActivities: Array<
     ActivityLog & {
       user: Pick<Profile, "id" | "full_name" | "nickname" | "avatar_url">;
@@ -136,6 +171,113 @@ export async function getCrewBasicStats(crewId: string): Promise<CrewBasicStats>
   const attendanceRate =
     totalAttendances && totalAttendances > 0 ? (checkedInCount! / totalAttendances) * 100 : 0;
 
+  // 9. 일정당 평균 참석자 수
+  const { data: schedulesWithAttendances } = await supabase
+    .from("schedules")
+    .select(
+      `
+      id,
+      attendances:schedule_attendances(id, checked_in_at)
+    `,
+    )
+    .eq("crew_id", crewId);
+
+  const totalCheckedIn =
+    schedulesWithAttendances?.reduce((sum, schedule) => {
+      const attendances = schedule.attendances as Array<{
+        id: string;
+        checked_in_at: string | null;
+      }>;
+      return sum + attendances.filter((a) => a.checked_in_at).length;
+    }, 0) || 0;
+  const averageAttendees =
+    completedSchedules && completedSchedules > 0 ? totalCheckedIn / completedSchedules : 0;
+
+  // 10. 노쇼율
+  const { count: noShowCount } = await supabase
+    .from("schedule_attendances")
+    .select("*, schedules!inner(crew_id)", { count: "exact", head: true })
+    .eq("schedules.crew_id", crewId)
+    .eq("status", "no_show");
+  const noShowRate = totalAttendances && totalAttendances > 0 ? (noShowCount! / totalAttendances) * 100 : 0;
+
+  // 11. 신규 멤버 전환율 (최근 3개월 가입자 중 첫 참석까지의 비율)
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  const { data: newMembers } = await supabase
+    .from("crew_members")
+    .select("user_id, joined_at")
+    .eq("crew_id", crewId)
+    .gte("joined_at", threeMonthsAgo.toISOString());
+
+  let newMembersWithAttendance = 0;
+  if (newMembers && newMembers.length > 0) {
+    for (const member of newMembers) {
+      const { count: attendanceCount } = await supabase
+        .from("schedule_attendances")
+        .select("*, schedules!inner(crew_id)", { count: "exact", head: true })
+        .eq("user_id", member.user_id)
+        .eq("schedules.crew_id", crewId)
+        .not("checked_in_at", "is", null);
+      if (attendanceCount && attendanceCount > 0) {
+        newMembersWithAttendance++;
+      }
+    }
+  }
+  const newMemberConversionRate =
+    newMembers && newMembers.length > 0 ? (newMembersWithAttendance / newMembers.length) * 100 : 0;
+
+  // 12. 단계별 이탈률 (1차 참석자 중 2차에 참석한 비율의 역)
+  const { data: phaseAttendances } = await supabase
+    .from("schedule_attendances")
+    .select(
+      `
+      user_id,
+      schedule_id,
+      phase_id,
+      checked_in_at,
+      phase:schedule_phases(phase_number),
+      schedule:schedules!inner(crew_id)
+    `,
+    )
+    .eq("schedule.crew_id", crewId)
+    .not("checked_in_at", "is", null);
+
+  // 일정별로 그룹화하여 1차, 2차 참석 계산
+  const schedulePhaseMap = new Map<string, { phase1: Set<string>; phase2: Set<string> }>();
+  phaseAttendances?.forEach((attendance) => {
+    const phase = attendance.phase as { phase_number: number } | null;
+    if (!phase) return;
+
+    if (!schedulePhaseMap.has(attendance.schedule_id)) {
+      schedulePhaseMap.set(attendance.schedule_id, {
+        phase1: new Set(),
+        phase2: new Set(),
+      });
+    }
+
+    const map = schedulePhaseMap.get(attendance.schedule_id)!;
+    if (phase.phase_number === 1) {
+      map.phase1.add(attendance.user_id);
+    } else if (phase.phase_number === 2) {
+      map.phase2.add(attendance.user_id);
+    }
+  });
+
+  let totalPhase1 = 0;
+  let continuedToPhase2 = 0;
+  schedulePhaseMap.forEach((phases) => {
+    totalPhase1 += phases.phase1.size;
+    phases.phase1.forEach((userId) => {
+      if (phases.phase2.has(userId)) {
+        continuedToPhase2++;
+      }
+    });
+  });
+
+  const phaseDropoffRate =
+    totalPhase1 > 0 ? ((totalPhase1 - continuedToPhase2) / totalPhase1) * 100 : 0;
+
   return {
     crew,
     totalMembers: totalMembers || 0,
@@ -145,6 +287,10 @@ export async function getCrewBasicStats(crewId: string): Promise<CrewBasicStats>
     totalAttendances: totalAttendances || 0,
     checkedInCount: checkedInCount || 0,
     attendanceRate: Math.round(attendanceRate * 10) / 10,
+    averageAttendees: Math.round(averageAttendees * 10) / 10,
+    noShowRate: Math.round(noShowRate * 10) / 10,
+    newMemberConversionRate: Math.round(newMemberConversionRate * 10) / 10,
+    phaseDropoffRate: Math.round(phaseDropoffRate * 10) / 10,
   };
 }
 
@@ -437,19 +583,213 @@ export async function getRecentActivities(
 }
 
 /**
+ * 요일별 참석률
+ */
+export async function getDayAttendanceRate(
+  crewId: string,
+): Promise<{ dayAttendanceRate: DayAttendanceRateData[] }> {
+  const supabase = await createClient();
+
+  const { data: schedules } = await supabase
+    .from("schedules")
+    .select(
+      `
+      id,
+      event_date,
+      attendances:schedule_attendances(id, checked_in_at)
+    `,
+    )
+    .eq("crew_id", crewId);
+
+  const dayStats: { [key: number]: { total: number; attended: number } } = {};
+  for (let i = 0; i < 7; i++) {
+    dayStats[i] = { total: 0, attended: 0 };
+  }
+
+  schedules?.forEach((schedule) => {
+    const day = new Date(schedule.event_date).getDay();
+    const attendances = schedule.attendances as Array<{
+      id: string;
+      checked_in_at: string | null;
+    }>;
+    dayStats[day].total += attendances.length;
+    dayStats[day].attended += attendances.filter((a) => a.checked_in_at).length;
+  });
+
+  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+  const dayAttendanceRate: DayAttendanceRateData[] = Object.entries(dayStats).map(
+    ([dayOfWeek, stats]) => ({
+      day: dayNames[Number(dayOfWeek)],
+      dayOfWeek: Number(dayOfWeek),
+      totalSchedules: stats.total,
+      totalAttended: stats.attended,
+      attendanceRate: stats.total > 0 ? (stats.attended / stats.total) * 100 : 0,
+    }),
+  );
+
+  return { dayAttendanceRate };
+}
+
+/**
+ * 시간대별 참석률
+ */
+export async function getTimeAttendanceRate(
+  crewId: string,
+): Promise<{ timeAttendanceRate: TimeAttendanceRateData[] }> {
+  const supabase = await createClient();
+
+  const { data: schedules } = await supabase
+    .from("schedules")
+    .select(
+      `
+      id,
+      phases:schedule_phases(start_time),
+      attendances:schedule_attendances(id, checked_in_at)
+    `,
+    )
+    .eq("crew_id", crewId);
+
+  const timeStats: {
+    [key: string]: { total: number; attended: number };
+  } = {
+    "새벽 (0-5시)": { total: 0, attended: 0 },
+    "오전 (6-11시)": { total: 0, attended: 0 },
+    "오후 (12-17시)": { total: 0, attended: 0 },
+    "저녁 (18-23시)": { total: 0, attended: 0 },
+  };
+
+  schedules?.forEach((schedule) => {
+    const phases = schedule.phases as Array<{ start_time: string }>;
+    const startTime = phases[0]?.start_time;
+    if (!startTime) return;
+
+    const hour = parseInt(startTime.split(":")[0]);
+    let timeSlot: string;
+    if (hour >= 0 && hour < 6) timeSlot = "새벽 (0-5시)";
+    else if (hour >= 6 && hour < 12) timeSlot = "오전 (6-11시)";
+    else if (hour >= 12 && hour < 18) timeSlot = "오후 (12-17시)";
+    else timeSlot = "저녁 (18-23시)";
+
+    const attendances = schedule.attendances as Array<{
+      id: string;
+      checked_in_at: string | null;
+    }>;
+    timeStats[timeSlot].total += attendances.length;
+    timeStats[timeSlot].attended += attendances.filter((a) => a.checked_in_at).length;
+  });
+
+  const timeAttendanceRate: TimeAttendanceRateData[] = Object.entries(timeStats).map(
+    ([timeSlot, stats]) => ({
+      timeSlot,
+      totalSchedules: stats.total,
+      totalAttended: stats.attended,
+      attendanceRate: stats.total > 0 ? (stats.attended / stats.total) * 100 : 0,
+    }),
+  );
+
+  return { timeAttendanceRate };
+}
+
+/**
+ * 암장별 참석률
+ */
+export async function getGymAttendanceRate(
+  crewId: string,
+  limit: number = 10,
+): Promise<{ gymAttendanceRate: GymAttendanceRateData[] }> {
+  const supabase = await createClient();
+
+  const { data: phases } = await supabase
+    .from("schedule_phases")
+    .select(
+      `
+      gym_id,
+      gym:gyms(id, name, address),
+      schedule_id,
+      schedules!inner(crew_id)
+    `,
+    )
+    .eq("schedules.crew_id", crewId)
+    .not("gym_id", "is", null);
+
+  if (!phases) {
+    return { gymAttendanceRate: [] };
+  }
+
+  const gymStatsMap = new Map<
+    string,
+    { gym: { id: string; name: string; address: string | null }; total: number; attended: number }
+  >();
+
+  for (const phase of phases) {
+    if (!phase.gym || !phase.gym_id) continue;
+
+    const gym = phase.gym as { id: string; name: string; address: string | null };
+
+    const { data: attendances } = await supabase
+      .from("schedule_attendances")
+      .select("id, checked_in_at")
+      .eq("schedule_id", phase.schedule_id)
+      .eq("phase_id", phase.gym_id);
+
+    if (!attendances) continue;
+
+    const total = attendances.length;
+    const attended = attendances.filter((a) => a.checked_in_at).length;
+
+    if (gymStatsMap.has(phase.gym_id)) {
+      const existing = gymStatsMap.get(phase.gym_id)!;
+      existing.total += total;
+      existing.attended += attended;
+    } else {
+      gymStatsMap.set(phase.gym_id, {
+        gym: { id: gym.id, name: gym.name, address: gym.address },
+        total,
+        attended,
+      });
+    }
+  }
+
+  const gymAttendanceRate: GymAttendanceRateData[] = Array.from(gymStatsMap.values())
+    .map((stat) => ({
+      gym: stat.gym,
+      totalSchedules: stat.total,
+      totalAttended: stat.attended,
+      attendanceRate: stat.total > 0 ? (stat.attended / stat.total) * 100 : 0,
+    }))
+    .sort((a, b) => b.totalSchedules - a.totalSchedules)
+    .slice(0, limit);
+
+  return { gymAttendanceRate };
+}
+
+/**
  * 크루 전체 통계 (모든 통계를 한번에)
  */
 export async function getCrewAllStats(crewId: string): Promise<CrewAllStatsResponse> {
-  const [basicStats, memberGrowth, memberStats, popularGyms, dayDist, timeDist, recentActivities] =
-    await Promise.all([
-      getCrewBasicStats(crewId),
-      getMemberGrowth(crewId),
-      getMemberAttendanceStats(crewId),
-      getPopularGyms(crewId),
-      getDayDistribution(crewId),
-      getTimeDistribution(crewId),
-      getRecentActivities(crewId),
-    ]);
+  const [
+    basicStats,
+    memberGrowth,
+    memberStats,
+    popularGyms,
+    dayDist,
+    timeDist,
+    dayAttendRate,
+    timeAttendRate,
+    gymAttendRate,
+    recentActivities,
+  ] = await Promise.all([
+    getCrewBasicStats(crewId),
+    getMemberGrowth(crewId),
+    getMemberAttendanceStats(crewId),
+    getPopularGyms(crewId),
+    getDayDistribution(crewId),
+    getTimeDistribution(crewId),
+    getDayAttendanceRate(crewId),
+    getTimeAttendanceRate(crewId),
+    getGymAttendanceRate(crewId),
+    getRecentActivities(crewId),
+  ]);
 
   return {
     ...basicStats,
@@ -458,6 +798,9 @@ export async function getCrewAllStats(crewId: string): Promise<CrewAllStatsRespo
     popularGyms: popularGyms.topGyms,
     dayDistribution: dayDist.distribution,
     timeDistribution: timeDist.distribution,
+    dayAttendanceRate: dayAttendRate.dayAttendanceRate,
+    timeAttendanceRate: timeAttendRate.timeAttendanceRate,
+    gymAttendanceRate: gymAttendRate.gymAttendanceRate,
     recentActivities: recentActivities.activities,
   };
 }

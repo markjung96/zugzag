@@ -112,11 +112,40 @@ export default function CrewStatsPage() {
           />
           <StatCard
             icon={<TrendingUp className="h-6 w-6" />}
-            label="완료된 일정"
-            value={stats.completedSchedules}
+            label="평균 참석자"
+            value={stats.averageAttendees.toFixed(1)}
             color="from-purple-500 to-purple-600"
-            suffix="개"
+            suffix="명"
           />
+        </motion.div>
+
+        {/* 추가 지표 */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          className="grid gap-4 md:grid-cols-4"
+        >
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 backdrop-blur-xl">
+            <div className="mb-2 text-sm text-zinc-400">완료된 일정</div>
+            <div className="text-2xl font-bold text-white">{stats.completedSchedules}개</div>
+          </div>
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 backdrop-blur-xl">
+            <div className="mb-2 text-sm text-zinc-400">노쇼율</div>
+            <div className="text-2xl font-bold text-red-400">{stats.noShowRate.toFixed(1)}%</div>
+          </div>
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 backdrop-blur-xl">
+            <div className="mb-2 text-sm text-zinc-400">신규 멤버 전환율</div>
+            <div className="text-2xl font-bold text-green-400">
+              {stats.newMemberConversionRate.toFixed(1)}%
+            </div>
+          </div>
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 backdrop-blur-xl">
+            <div className="mb-2 text-sm text-zinc-400">단계별 이탈률</div>
+            <div className="text-2xl font-bold text-yellow-400">
+              {stats.phaseDropoffRate.toFixed(1)}%
+            </div>
+          </div>
         </motion.div>
 
         {/* 일정 현황 */}
@@ -330,6 +359,134 @@ export default function CrewStatsPage() {
             </div>
           )}
         </motion.div>
+
+        {/* 요일별 참석률 */}
+        {stats.dayAttendanceRate && stats.dayAttendanceRate.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-xl"
+          >
+            <div className="mb-4 flex items-center gap-2">
+              <CheckCircle2 className="h-6 w-6 text-green-500" />
+              <h2 className="text-xl font-bold text-white">요일별 참석률</h2>
+            </div>
+
+            <div className="space-y-3">
+              {stats.dayAttendanceRate
+                .sort((a, b) => b.attendanceRate - a.attendanceRate)
+                .map((item, index) => (
+                  <div key={item.dayOfWeek} className="space-y-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-zinc-300">{item.day}요일</span>
+                      <div className="flex gap-3 text-xs">
+                        <span className="text-zinc-500">
+                          {item.totalAttended}/{item.totalSchedules}
+                        </span>
+                        <span className="text-green-400">{item.attendanceRate.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    <div className="h-2.5 overflow-hidden rounded-full bg-zinc-800">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${item.attendanceRate}%` }}
+                        transition={{ duration: 0.5, delay: 0.35 + index * 0.05 }}
+                        className="h-full bg-gradient-to-r from-green-500 to-green-600"
+                      />
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* 시간대별 참석률 */}
+        {stats.timeAttendanceRate && stats.timeAttendanceRate.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.37 }}
+            className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-xl"
+          >
+            <div className="mb-4 flex items-center gap-2">
+              <Clock className="h-6 w-6 text-purple-500" />
+              <h2 className="text-xl font-bold text-white">시간대별 참석률</h2>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-4">
+              {stats.timeAttendanceRate.map((item, index) => (
+                <div
+                  key={item.timeSlot}
+                  className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 text-center"
+                >
+                  <div className="mb-2 text-sm text-zinc-400">{item.timeSlot}</div>
+                  <div className="mb-1 text-3xl font-bold text-white">
+                    {item.attendanceRate.toFixed(1)}%
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    {item.totalAttended}/{item.totalSchedules}
+                  </div>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-800">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${item.attendanceRate}%` }}
+                      transition={{ duration: 0.5, delay: 0.37 + index * 0.1 }}
+                      className="h-full bg-gradient-to-r from-purple-500 to-purple-600"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* 암장별 참석률 */}
+        {stats.gymAttendanceRate && stats.gymAttendanceRate.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.39 }}
+            className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-xl"
+          >
+            <div className="mb-4 flex items-center gap-2">
+              <MapPin className="h-6 w-6 text-cyan-400" />
+              <h2 className="text-xl font-bold text-white">암장별 참석률</h2>
+            </div>
+
+            <div className="space-y-3">
+              {stats.gymAttendanceRate.map((item, index) => (
+                <div
+                  key={item.gym.id}
+                  className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4"
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <div>
+                      <div className="font-semibold text-white">{item.gym.name}</div>
+                      <div className="text-xs text-zinc-400">{item.gym.address}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-cyan-400">
+                        {item.attendanceRate.toFixed(1)}%
+                      </div>
+                      <div className="text-xs text-zinc-500">
+                        {item.totalAttended}/{item.totalSchedules}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${item.attendanceRate}%` }}
+                      transition={{ duration: 0.5, delay: 0.39 + index * 0.05 }}
+                      className="h-full bg-gradient-to-r from-cyan-400 to-cyan-500"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         {/* 인기 암장 */}
         <motion.div
