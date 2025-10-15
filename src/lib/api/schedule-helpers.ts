@@ -3,7 +3,7 @@
  * 서버 컴포넌트 및 API 라우트에서 사용
  */
 
-import type { Tables } from "@/lib/supabase/database.types";
+import type { Database, Tables } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 
 // 타입 정의
@@ -20,8 +20,17 @@ export interface PhaseInput {
   title: string;
   start_time: string;
   end_time?: string | null;
+  // 활동 타입
+  phase_type?: "exercise" | "meal" | "afterparty";
+  exercise_type?: "climbing" | "gym" | "running" | "hiking" | "other";
+  // 암장 정보 (운동일 때)
   gym_id?: string | null;
   location_text?: string | null;
+  // 카카오 장소 정보 (식사/뒷풀이일 때)
+  location_kakao_id?: string | null;
+  location_kakao_name?: string | null;
+  location_kakao_address?: string | null;
+  location_kakao_category?: string | null;
   capacity?: number;
   notes?: string;
 }
@@ -63,8 +72,14 @@ export interface PhaseWithGym {
   title: string;
   start_time: string;
   end_time: string | null;
+  phase_type: "exercise" | "meal" | "afterparty";
+  exercise_type: "climbing" | "gym" | "running" | "hiking" | "other" | null;
   gym_id: string | null;
   location_text: string | null;
+  location_kakao_id: string | null;
+  location_kakao_name: string | null;
+  location_kakao_address: string | null;
+  location_kakao_category: string | null;
   capacity: number | null;
   notes: string | null;
   created_at: string | null;
@@ -105,8 +120,14 @@ export interface PhaseWithGymDetail {
   title: string;
   start_time: string;
   end_time: string | null;
+  phase_type: "exercise" | "meal" | "afterparty";
+  exercise_type: "climbing" | "gym" | "running" | "hiking" | "other" | null;
   gym_id: string | null;
   location_text: string | null;
+  location_kakao_id: string | null;
+  location_kakao_name: string | null;
+  location_kakao_address: string | null;
+  location_kakao_category: string | null;
   capacity: number | null;
   notes: string | null;
   created_at: string | null;
@@ -181,8 +202,14 @@ export async function createSchedule(data: CreateScheduleData): Promise<{ schedu
       title: phase.title,
       start_time: phase.start_time,
       end_time: phase.end_time,
+      phase_type: phase.phase_type || "exercise",
+      exercise_type: phase.exercise_type || "climbing",
       gym_id: phase.gym_id,
       location_text: phase.location_text,
+      location_kakao_id: phase.location_kakao_id,
+      location_kakao_name: phase.location_kakao_name,
+      location_kakao_address: phase.location_kakao_address,
+      location_kakao_category: phase.location_kakao_category,
       capacity: phase.capacity,
       notes: phase.notes,
     }));
@@ -230,9 +257,12 @@ export async function getSchedules(params: {
       crew:crews(id, name, logo_url),
       creator:profiles!schedules_created_by_fkey(id, full_name, avatar_url),
       phases:schedule_phases(
-        id, schedule_id, phase_number, title, start_time, end_time, gym_id,
+        id, schedule_id, phase_number, title, start_time, end_time, 
+        phase_type, exercise_type, gym_id,
         gym:gyms(id, name, address),
-        location_text, capacity, notes, created_at, updated_at
+        location_text, location_kakao_id, location_kakao_name, 
+        location_kakao_address, location_kakao_category,
+        capacity, notes, created_at, updated_at
       )
     `,
     )
@@ -302,9 +332,12 @@ export async function getScheduleById(id: string): Promise<ScheduleDetailRespons
       crew:crews(id, name, logo_url, description),
       creator:profiles!schedules_created_by_fkey(id, full_name, avatar_url, nickname),
       phases:schedule_phases(
-        id, schedule_id, phase_number, title, start_time, end_time, gym_id,
+        id, schedule_id, phase_number, title, start_time, end_time, 
+        phase_type, exercise_type, gym_id,
         gym:gyms(id, name, address, phone, website, latitude, longitude),
-        location_text, capacity, notes, created_at, updated_at
+        location_text, location_kakao_id, location_kakao_name,
+        location_kakao_address, location_kakao_category,
+        capacity, notes, created_at, updated_at
       ),
       attendances:schedule_attendances(
         id, schedule_id, user_id, phase_id, status, checked_in_at, checked_out_at, 
@@ -401,6 +434,25 @@ export async function registerAttendance(data: {
 }): Promise<{ success: boolean; attendance_id?: string }> {
   const supabase = await createClient();
 
+  // RSVP 마감 시간 확인
+  const { data: schedule } = await supabase
+    .from("schedules")
+    .select("rsvp_deadline, is_cancelled")
+    .eq("id", data.schedule_id)
+    .single();
+
+  if (schedule?.is_cancelled) {
+    throw new Error("일정이 취소되었습니다");
+  }
+
+  if (schedule?.rsvp_deadline) {
+    const now = new Date();
+    const deadline = new Date(schedule.rsvp_deadline);
+    if (now > deadline) {
+      throw new Error("RSVP 마감 시간이 지났습니다");
+    }
+  }
+
   const { data: result, error } = await supabase.rpc("register_schedule_attendance", {
     p_schedule_id: data.schedule_id,
     p_user_id: data.user_id,
@@ -424,6 +476,33 @@ export async function updateAttendanceStatus(
   user_note?: string,
 ): Promise<{ attendance: ScheduleAttendance }> {
   const supabase = await createClient();
+
+  // 참석 정보 조회 후 RSVP 마감 확인
+  const { data: currentAttendance } = await supabase
+    .from("schedule_attendances")
+    .select("schedule_id")
+    .eq("id", attendance_id)
+    .single();
+
+  if (currentAttendance) {
+    const { data: schedule } = await supabase
+      .from("schedules")
+      .select("rsvp_deadline, is_cancelled")
+      .eq("id", currentAttendance.schedule_id)
+      .single();
+
+    if (schedule?.is_cancelled) {
+      throw new Error("일정이 취소되었습니다");
+    }
+
+    if (schedule?.rsvp_deadline) {
+      const now = new Date();
+      const deadline = new Date(schedule.rsvp_deadline);
+      if (now > deadline) {
+        throw new Error("RSVP 마감 시간이 지났습니다");
+      }
+    }
+  }
 
   const { data: attendance, error } = await supabase
     .from("schedule_attendances")
@@ -543,6 +622,146 @@ export async function promoteFromWaitlist(schedule_id: string): Promise<SuccessR
 }
 
 /**
+ * 관리자가 참석 상태 변경 (admin_note 포함)
+ */
+export async function updateAttendanceByAdmin(
+  attendance_id: string,
+  status: "attending" | "not_attending" | "maybe" | "waitlist" | "late" | "early_leave" | "no_show",
+  admin_note?: string,
+): Promise<{ attendance: ScheduleAttendance }> {
+  const supabase = await createClient();
+
+  const { data: attendance, error } = await supabase
+    .from("schedule_attendances")
+    .update({
+      status,
+      admin_note,
+    })
+    .eq("id", attendance_id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to update attendance by admin: ${error.message}`);
+  }
+
+  return { attendance };
+}
+
+/**
+ * 관리자가 체크인 처리 (타임스탬프 포함)
+ */
+export async function adminCheckIn(
+  attendance_id: string,
+  admin_note?: string,
+): Promise<{ attendance: ScheduleAttendance }> {
+  const supabase = await createClient();
+
+  const { data: attendance, error } = await supabase
+    .from("schedule_attendances")
+    .update({
+      checked_in_at: new Date().toISOString(),
+      status: "attending",
+      admin_note,
+    })
+    .eq("id", attendance_id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to admin check in: ${error.message}`);
+  }
+
+  return { attendance };
+}
+
+/**
+ * 관리자가 체크아웃 처리
+ */
+export async function adminCheckOut(
+  attendance_id: string,
+  admin_note?: string,
+): Promise<{ attendance: ScheduleAttendance }> {
+  const supabase = await createClient();
+
+  const { data: attendance, error } = await supabase
+    .from("schedule_attendances")
+    .update({
+      checked_out_at: new Date().toISOString(),
+      admin_note,
+    })
+    .eq("id", attendance_id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to admin check out: ${error.message}`);
+  }
+
+  return { attendance };
+}
+
+/**
+ * 특정 대기자를 수동 승격
+ */
+export async function promoteSpecificWaitlistUser(
+  attendance_id: string,
+): Promise<{ attendance: ScheduleAttendance }> {
+  const supabase = await createClient();
+
+  // 먼저 대기 중인지 확인
+  const { data: currentAttendance } = await supabase
+    .from("schedule_attendances")
+    .select("status, schedule_id")
+    .eq("id", attendance_id)
+    .single();
+
+  if (!currentAttendance || currentAttendance.status !== "waitlist") {
+    throw new Error("Not a waitlist attendance");
+  }
+
+  // 정원 확인
+  const { data: schedule } = await supabase
+    .from("schedules")
+    .select("total_capacity")
+    .eq("id", currentAttendance.schedule_id)
+    .single();
+
+  const { count: currentAttending } = await supabase
+    .from("schedule_attendances")
+    .select("*", { count: "exact", head: true })
+    .eq("schedule_id", currentAttendance.schedule_id)
+    .eq("status", "attending");
+
+  if (
+    schedule &&
+    schedule.total_capacity !== null &&
+    currentAttending !== null &&
+    currentAttending >= schedule.total_capacity
+  ) {
+    throw new Error("Schedule is at full capacity");
+  }
+
+  // 승격
+  const { data: attendance, error } = await supabase
+    .from("schedule_attendances")
+    .update({
+      status: "attending",
+      waitlist_position: null,
+      waitlist_promoted_at: new Date().toISOString(),
+    })
+    .eq("id", attendance_id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to promote user: ${error.message}`);
+  }
+
+  return { attendance };
+}
+
+/**
  * 일정 통계 조회
  */
 export async function getScheduleStats(schedule_id: string): Promise<ScheduleStatsResponse> {
@@ -559,4 +778,254 @@ export async function getScheduleStats(schedule_id: string): Promise<ScheduleSta
   }
 
   return { stats };
+}
+
+/**
+ * 일정이 종료된 후, 체크인하지 않은 참석자들을 자동으로 노쇼 처리합니다.
+ * @param schedule_id - 일정 ID
+ * @returns 업데이트된 참석자 수
+ */
+export async function autoMarkNoShow(schedule_id: string): Promise<{ updated_count: number }> {
+  const supabase = await createClient();
+
+  // 1. 일정 정보 가져오기 (모든 단계의 종료 시간 확인)
+  const { data: schedule, error: scheduleError } = await supabase
+    .from("schedules")
+    .select(
+      `
+      *,
+      phases:schedule_phases(*)
+    `,
+    )
+    .eq("id", schedule_id)
+    .single();
+
+  if (scheduleError || !schedule) {
+    throw new Error(`Failed to fetch schedule: ${scheduleError?.message}`);
+  }
+
+  // 2. 마지막 단계의 종료 시간 확인
+  const phases = schedule.phases as Database["public"]["Tables"]["schedule_phases"]["Row"][];
+  if (!phases || phases.length === 0) {
+    throw new Error("Schedule has no phases");
+  }
+
+  // 마지막 단계의 종료 시간 (또는 시작 시간 + 3시간)을 기준으로 판단
+  const lastPhase = phases[phases.length - 1];
+  const lastEndTime = lastPhase.end_time || lastPhase.start_time;
+
+  if (!lastEndTime) {
+    throw new Error("Cannot determine schedule end time");
+  }
+
+  // 3. 현재 시간이 종료 시간보다 나중인지 확인
+  const now = new Date();
+  const endDateTime = new Date(`${schedule.event_date}T${lastEndTime}`);
+
+  if (now <= endDateTime) {
+    throw new Error("Schedule has not ended yet");
+  }
+
+  // 4. attending 상태이지만 체크인하지 않은 참석자들을 no_show로 변경
+  const { data: updatedAttendances, error: updateError } = await supabase
+    .from("schedule_attendances")
+    .update({
+      status: "no_show",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("schedule_id", schedule_id)
+    .eq("status", "attending")
+    .is("checked_in_at", null)
+    .select();
+
+  if (updateError) {
+    throw new Error(`Failed to mark no-shows: ${updateError.message}`);
+  }
+
+  return { updated_count: updatedAttendances?.length || 0 };
+}
+
+/**
+ * 단계별 RSVP: 특정 단계에 대한 참석 등록/변경
+ * @param schedule_id - 일정 ID
+ * @param phase_id - 단계 ID (null이면 전체 일정)
+ * @param user_id - 사용자 ID
+ * @param status - 참석 상태
+ * @param user_note - 사용자 메모
+ * @returns 참석 정보
+ */
+export async function registerPhaseAttendance(
+  schedule_id: string,
+  phase_id: string | null,
+  user_id: string,
+  status: "attending" | "not_attending" | "maybe",
+  user_note?: string,
+): Promise<{ attendance: ScheduleAttendance }> {
+  const supabase = await createClient();
+
+  // 1. 일정 정보 가져오기
+  const { data: schedule, error: scheduleError } = await supabase
+    .from("schedules")
+    .select("*")
+    .eq("id", schedule_id)
+    .single();
+
+  if (scheduleError || !schedule) {
+    throw new Error(`Failed to fetch schedule: ${scheduleError?.message}`);
+  }
+
+  // 2. phase_id가 null이면 전체 일정에 대한 참석 (기존 로직과 동일)
+  // phase_id가 있으면 해당 단계에 대한 참석
+  if (phase_id) {
+    // 단계가 실제로 존재하는지 확인
+    const { data: phase, error: phaseError } = await supabase
+      .from("schedule_phases")
+      .select("*")
+      .eq("id", phase_id)
+      .eq("schedule_id", schedule_id)
+      .single();
+
+    if (phaseError || !phase) {
+      throw new Error("Phase not found");
+    }
+  }
+
+  // 3. 기존 참석 정보 확인
+  const { data: existingAttendance } = await supabase
+    .from("schedule_attendances")
+    .select("*")
+    .eq("schedule_id", schedule_id)
+    .eq("user_id", user_id)
+    .eq("phase_id", phase_id || "")
+    .maybeSingle();
+
+  let attendance: ScheduleAttendance;
+
+  if (existingAttendance) {
+    // 기존 참석 정보 업데이트
+    const { data, error } = await supabase
+      .from("schedule_attendances")
+      .update({
+        status,
+        user_note: user_note || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existingAttendance.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update attendance: ${error.message}`);
+    }
+
+    attendance = data as ScheduleAttendance;
+  } else {
+    // 새로운 참석 정보 생성
+    // attending 상태일 때만 정원 체크
+    if (status === "attending") {
+      const { data: currentAttendances } = await supabase
+        .from("schedule_attendances")
+        .select("id")
+        .eq("schedule_id", schedule_id)
+        .eq("status", "attending")
+        .is("phase_id", null); // 전체 일정 참석자만 카운트
+
+      const currentCount = currentAttendances?.length || 0;
+
+      if (
+        schedule.total_capacity !== null &&
+        currentCount >= schedule.total_capacity &&
+        !phase_id
+      ) {
+        // 전체 일정의 경우에만 정원 체크
+        if (schedule.allow_waitlist) {
+          // 대기열로 등록
+          const { data, error } = await supabase
+            .from("schedule_attendances")
+            .insert({
+              schedule_id,
+              user_id,
+              phase_id: phase_id || null,
+              status: "waitlist",
+              user_note: user_note || null,
+            })
+            .select()
+            .single();
+
+          if (error) {
+            throw new Error(`Failed to register attendance: ${error.message}`);
+          }
+
+          attendance = data as ScheduleAttendance;
+        } else {
+          throw new Error("Schedule is full and waitlist is not allowed");
+        }
+      } else {
+        // 정원 여유 있음 - 바로 참석 등록
+        const { data, error } = await supabase
+          .from("schedule_attendances")
+          .insert({
+            schedule_id,
+            user_id,
+            phase_id: phase_id || null,
+            status,
+            user_note: user_note || null,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          throw new Error(`Failed to register attendance: ${error.message}`);
+        }
+
+        attendance = data as ScheduleAttendance;
+      }
+    } else {
+      // not_attending, maybe 상태는 정원 상관없이 등록
+      const { data, error } = await supabase
+        .from("schedule_attendances")
+        .insert({
+          schedule_id,
+          user_id,
+          phase_id: phase_id || null,
+          status,
+          user_note: user_note || null,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to register attendance: ${error.message}`);
+      }
+
+      attendance = data as ScheduleAttendance;
+    }
+  }
+
+  return { attendance };
+}
+
+/**
+ * 단계별 참석 정보 조회
+ * @param schedule_id - 일정 ID
+ * @param user_id - 사용자 ID
+ * @returns 단계별 참석 정보 배열
+ */
+export async function getPhaseAttendances(
+  schedule_id: string,
+  user_id: string,
+): Promise<{ attendances: ScheduleAttendance[] }> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("schedule_attendances")
+    .select("*")
+    .eq("schedule_id", schedule_id)
+    .eq("user_id", user_id);
+
+  if (error) {
+    throw new Error(`Failed to fetch phase attendances: ${error.message}`);
+  }
+
+  return { attendances: (data as ScheduleAttendance[]) || [] };
 }
