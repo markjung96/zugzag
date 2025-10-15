@@ -17,9 +17,16 @@ type RsvpButtonProps = {
   userAttendance?: UserAttendance;
   isFull: boolean;
   allowWaitlist: boolean;
+  rsvpDeadline?: string | null;
 };
 
-export function RsvpButton({ scheduleId, userAttendance, isFull, allowWaitlist }: RsvpButtonProps) {
+export function RsvpButton({
+  scheduleId,
+  userAttendance,
+  isFull,
+  allowWaitlist,
+  rsvpDeadline,
+}: RsvpButtonProps) {
   const toast = useToast();
   const [showModal, setShowModal] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<
@@ -29,7 +36,14 @@ export function RsvpButton({ scheduleId, userAttendance, isFull, allowWaitlist }
 
   const currentStatus = userAttendance?.status;
 
+  // RSVP 마감 여부 확인
+  const isRsvpClosed = rsvpDeadline ? new Date(rsvpDeadline) < new Date() : false;
+
   const handleRsvp = async (status: "attending" | "not_attending" | "maybe") => {
+    if (isRsvpClosed) {
+      toast.error("RSVP 마감 시간이 지났습니다");
+      return;
+    }
     setSelectedStatus(status);
     setShowModal(true);
   };
@@ -103,11 +117,25 @@ export function RsvpButton({ scheduleId, userAttendance, isFull, allowWaitlist }
         transition={{ delay: 0.4 }}
         className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-800 bg-zinc-900/95 p-4 backdrop-blur-xl md:right-4 md:bottom-4 md:left-auto md:w-auto md:rounded-2xl md:border"
       >
+        {/* RSVP 마감 안내 */}
+        {isRsvpClosed && (
+          <div className="mx-auto mb-3 max-w-3xl rounded-lg bg-red-500/10 px-4 py-2 text-center text-sm text-red-400">
+            ⏰ RSVP 마감 시간이 지났습니다
+          </div>
+        )}
+
+        {/* RSVP 마감 임박 안내 */}
+        {!isRsvpClosed && rsvpDeadline && (
+          <div className="mx-auto mb-3 max-w-3xl text-center text-xs text-zinc-400">
+            마감: {new Date(rsvpDeadline).toLocaleString("ko-KR")}
+          </div>
+        )}
+
         <div className="mx-auto flex max-w-3xl gap-2">
           {/* 참석 */}
           <button
             onClick={() => handleRsvp("attending")}
-            disabled={isFull && !allowWaitlist && currentStatus !== "attending"}
+            disabled={(isFull && !allowWaitlist && currentStatus !== "attending") || isRsvpClosed}
             className={`flex-1 rounded-xl bg-gradient-to-r px-6 py-3 font-semibold text-white transition-all hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 ${getButtonColor("attending")}`}
           >
             <CheckCircle className="mr-2 inline h-5 w-5" />
@@ -118,7 +146,8 @@ export function RsvpButton({ scheduleId, userAttendance, isFull, allowWaitlist }
           {/* 미정 */}
           <button
             onClick={() => handleRsvp("maybe")}
-            className={`flex-1 rounded-xl bg-gradient-to-r px-6 py-3 font-semibold text-white transition-all hover:scale-105 ${getButtonColor("maybe")}`}
+            disabled={isRsvpClosed}
+            className={`flex-1 rounded-xl bg-gradient-to-r px-6 py-3 font-semibold text-white transition-all hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 ${getButtonColor("maybe")}`}
           >
             <HelpCircle className="mr-2 inline h-5 w-5" />
             미정{currentStatus === "maybe" && " ✓"}
@@ -127,7 +156,8 @@ export function RsvpButton({ scheduleId, userAttendance, isFull, allowWaitlist }
           {/* 불참 */}
           <button
             onClick={() => handleRsvp("not_attending")}
-            className={`flex-1 rounded-xl bg-gradient-to-r px-6 py-3 font-semibold text-white transition-all hover:scale-105 ${getButtonColor("not_attending")}`}
+            disabled={isRsvpClosed}
+            className={`flex-1 rounded-xl bg-gradient-to-r px-6 py-3 font-semibold text-white transition-all hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50 ${getButtonColor("not_attending")}`}
           >
             <XCircle className="mr-2 inline h-5 w-5" />
             불참{currentStatus === "not_attending" && " ✓"}

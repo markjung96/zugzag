@@ -7,28 +7,39 @@ import type { Tables } from "@/lib/supabase/database.types";
 
 type Attendance = Pick<
   Tables<"schedule_attendances">,
-  "id" | "user_id" | "status" | "checked_in_at" | "user_note" | "waitlist_position"
+  "id" | "user_id" | "phase_id" | "status" | "checked_in_at" | "user_note" | "waitlist_position"
 > & {
   user: Pick<Tables<"profiles">, "id" | "full_name" | "avatar_url" | "nickname" | "climbing_level">;
+};
+
+type Phase = {
+  id: string;
+  phase_number: number;
+  title: string;
 };
 
 type AttendanceSectionProps = {
   scheduleId: string;
   attendances: Attendance[];
-  totalCapacity: number;
+  phases: Phase[];
   isCreator: boolean;
 };
 
-export function AttendanceSection({
-  attendances,
-  totalCapacity,
-  isCreator,
-}: AttendanceSectionProps) {
-  // 상태별로 그룹화
-  const attending = attendances.filter((a) => a.status === "attending");
-  const waitlist = attendances.filter((a) => a.status === "waitlist");
-  const maybe = attendances.filter((a) => a.status === "maybe");
-  const notAttending = attendances.filter((a) => a.status === "not_attending");
+export function AttendanceSection({ attendances, phases, isCreator }: AttendanceSectionProps) {
+  // 단계별로 그룹화
+  const getPhaseAttendances = (phaseId: string) => {
+    return attendances.filter((a) => a.phase_id === phaseId);
+  };
+
+  const getPhaseStats = (phaseId: string) => {
+    const phaseAttendances = getPhaseAttendances(phaseId);
+    return {
+      attending: phaseAttendances.filter((a) => a.status === "attending"),
+      waitlist: phaseAttendances.filter((a) => a.status === "waitlist"),
+      maybe: phaseAttendances.filter((a) => a.status === "maybe"),
+      notAttending: phaseAttendances.filter((a) => a.status === "not_attending"),
+    };
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -90,13 +101,18 @@ export function AttendanceSection({
                 {/* 사용자 정보 */}
                 <div>
                   <div className="font-medium text-white">
-                    {attendance.user.nickname || attendance.user.full_name}
+                    {attendance.user.full_name ||
+                      attendance.user.nickname ||
+                      `사용자#${attendance.user.id.slice(0, 8)}`}
                   </div>
                   {attendance.user.climbing_level && (
                     <div className="text-xs text-zinc-500">{attendance.user.climbing_level}</div>
                   )}
                   {attendance.user_note && (
                     <div className="mt-1 text-xs text-zinc-400">{attendance.user_note}</div>
+                  )}
+                  {!attendance.user.full_name && !attendance.user.nickname && (
+                    <div className="mt-1 text-xs text-zinc-500">프로필을 완성해주세요</div>
                   )}
                 </div>
               </div>
@@ -122,46 +138,10 @@ export function AttendanceSection({
       transition={{ delay: 0.3 }}
       className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-xl"
     >
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-xl font-bold text-white">
-          <Users className="h-6 w-6 text-orange-500" />
-          참석자
-        </h2>
-        <div className="text-sm text-zinc-400">
-          {attending.length} / {totalCapacity}명
-        </div>
-      </div>
-
-      {/* 정원 진행 바 */}
-      <div className="mb-6">
-        <div className="mb-2 flex justify-between text-xs text-zinc-400">
-          <span>정원</span>
-          <span>
-            {Math.round((attending.length / totalCapacity) * 100)}% ({attending.length}/
-            {totalCapacity})
-          </span>
-        </div>
-        <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${(attending.length / totalCapacity) * 100}%` }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="h-full bg-gradient-to-r from-orange-500 to-cyan-400"
-          />
-        </div>
-      </div>
-
-      {/* 참석자 목록 */}
-      {renderAttendanceList(attending, "참석", "bg-green-500/10 text-green-500")}
-
-      {/* 대기자 목록 */}
-      {renderAttendanceList(waitlist, "대기", "bg-orange-500/10 text-orange-500")}
-
-      {/* 미정 목록 */}
-      {renderAttendanceList(maybe, "미정", "bg-yellow-500/10 text-yellow-500")}
-
-      {/* 불참 목록 (크루장만 보임) */}
-      {isCreator && renderAttendanceList(notAttending, "불참", "bg-red-500/10 text-red-500")}
+      <h2 className="mb-6 flex items-center gap-2 text-xl font-bold text-white">
+        <Users className="h-6 w-6 text-orange-500" />
+        참석자 목록
+      </h2>
 
       {/* 참석자 없음 */}
       {attendances.length === 0 && (
@@ -170,6 +150,44 @@ export function AttendanceSection({
           <p className="text-sm text-zinc-500">아직 참석자가 없습니다</p>
         </div>
       )}
+
+      {/* 단계별 참석자 목록 */}
+      {phases.map((phase, idx) => {
+        const stats = getPhaseStats(phase.id);
+        const totalAttending = stats.attending.length;
+
+        return (
+          <div key={phase.id} className={idx > 0 ? "mt-8" : ""}>
+            <div className="mb-4 flex items-center justify-between border-b border-zinc-800 pb-3">
+              <h3 className="text-lg font-semibold text-white">{phase.title}</h3>
+              <div className="text-sm text-zinc-400">{totalAttending}명 참석</div>
+            </div>
+
+            {/* 참석자 목록 */}
+            {renderAttendanceList(stats.attending, "참석", "bg-green-500/10 text-green-500")}
+
+            {/* 대기자 목록 */}
+            {renderAttendanceList(stats.waitlist, "대기", "bg-orange-500/10 text-orange-500")}
+
+            {/* 미정 목록 */}
+            {renderAttendanceList(stats.maybe, "미정", "bg-yellow-500/10 text-yellow-500")}
+
+            {/* 불참 목록 (크루장만 보임) */}
+            {isCreator &&
+              renderAttendanceList(stats.notAttending, "불참", "bg-red-500/10 text-red-500")}
+
+            {/* 해당 단계 참석자 없음 */}
+            {totalAttending === 0 &&
+              stats.waitlist.length === 0 &&
+              stats.maybe.length === 0 &&
+              stats.notAttending.length === 0 && (
+                <div className="py-8 text-center">
+                  <p className="text-sm text-zinc-500">이 단계의 참석자가 없습니다</p>
+                </div>
+              )}
+          </div>
+        );
+      })}
     </motion.div>
   );
 }

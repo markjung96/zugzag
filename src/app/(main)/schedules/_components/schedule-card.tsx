@@ -72,7 +72,7 @@ export function ScheduleCard({ schedule, index = 0 }: ScheduleCardProps) {
       transition={{ delay: index * 0.05 }}
       whileHover={{ y: -4 }}
     >
-      <Link href={`/schedule/${schedule.id}`}>
+      <Link href={`/schedules/${schedule.id}`}>
         <div
           className={`group relative overflow-hidden rounded-2xl border backdrop-blur-xl transition-all hover:border-orange-500/50 ${
             isPast

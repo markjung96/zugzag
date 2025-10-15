@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 
+import { Dropdown } from "@/components/dropdown";
 import { useUserCrewsQuery } from "@/app/(main)/crews/_hooks/use-user-crews-query";
 
 import type { FilterOptions } from "../page";
@@ -60,20 +61,17 @@ export function FilterBar({ filters, onFiltersChange }: FilterBarProps) {
           </div>
 
           {/* 크루 필터 */}
-          <div>
-            <label className="mb-2 block text-sm font-medium text-zinc-300">크루</label>
-            <select
+          <div className="md:w-auto">
+            <Dropdown
+              label="크루"
+              options={[
+                { value: "", label: "전체 크루" },
+                ...crews.map((crew) => ({ value: crew.id, label: crew.name })),
+              ]}
               value={filters.crewId || ""}
-              onChange={(e) => onFiltersChange({ ...filters, crewId: e.target.value || undefined })}
-              className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-white transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none md:w-auto"
-            >
-              <option value="">전체 크루</option>
-              {crews.map((crew) => (
-                <option key={crew.id} value={crew.id}>
-                  {crew.name}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => onFiltersChange({ ...filters, crewId: value || undefined })}
+              placeholder="전체 크루"
+            />
           </div>
         </div>
 

@@ -21,6 +21,7 @@ export type ScheduleDetail = Pick<
   | "visibility"
   | "allow_waitlist"
   | "rsvp_deadline"
+  | "notes"
 > & {
   crew: Pick<Tables<"crews">, "id" | "name" | "logo_url" | "description"> | null;
   creator: Pick<Tables<"profiles">, "id" | "full_name" | "avatar_url" | "nickname"> | null;
@@ -32,7 +33,13 @@ export type ScheduleDetail = Pick<
       | "title"
       | "start_time"
       | "end_time"
+      | "phase_type"
+      | "exercise_type"
       | "location_text"
+      | "location_kakao_id"
+      | "location_kakao_name"
+      | "location_kakao_address"
+      | "location_kakao_category"
       | "capacity"
       | "notes"
       | "gym_id"

@@ -15,7 +15,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { useToast } from "@/components/toast-provider";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -32,7 +32,7 @@ import {
 
 type Attendance = Pick<
   Tables<"schedule_attendances">,
-  "id" | "user_id" | "status" | "checked_in_at" | "user_note" | "waitlist_position"
+  "id" | "user_id" | "phase_id" | "status" | "checked_in_at" | "user_note" | "waitlist_position"
 > & {
   user: Pick<Tables<"profiles">, "id" | "full_name" | "avatar_url" | "nickname" | "climbing_level">;
 };
@@ -60,9 +60,33 @@ export default function ScheduleDetailPage() {
   const { data: attendancesData, isLoading: isLoadingAttendances } =
     useScheduleAttendancesQuery(scheduleId);
 
+  // 사용자의 단계별 참석 정보 조회
+  const [userPhaseAttendances, setUserPhaseAttendances] = useState<
+    Pick<Tables<"schedule_attendances">, "id" | "phase_id" | "status">[]
+  >([]);
+
   const schedule = scheduleData?.schedule || null;
   const attendances = (attendancesData?.attendances as unknown as Attendance[]) || [];
   const loading = isLoadingSchedule || isLoadingAttendances;
+
+  // 사용자의 단계별 참석 정보 가져오기
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const fetchUserPhaseAttendances = async () => {
+      try {
+        const response = await fetch(`/api/schedules/${scheduleId}/rsvp`);
+        if (response.ok) {
+          const data = await response.json();
+          setUserPhaseAttendances(data.attendances || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch phase attendances:", error);
+      }
+    };
+
+    fetchUserPhaseAttendances();
+  }, [scheduleId, currentUserId]);
 
   const handleCancel = async () => {
     if (!confirm("정말 이 일정을 취소하시겠습니까?")) return;
@@ -133,11 +157,18 @@ export default function ScheduleDetailPage() {
   const isPast = new Date(schedule.event_date) < new Date();
   const isCreator = schedule.created_by === currentUserId;
   const userAttendance = attendances.find((a) => a.user_id === currentUserId);
-  const attendingCount = attendances.filter((a) => a.status === "attending").length;
-  const waitlistCount = attendances.filter((a) => a.status === "waitlist").length;
+
+  // 첫 번째 단계(1차)의 참석 인원을 기준으로 계산
+  const firstPhaseId = schedule.phases[0]?.id;
+  const attendingCount = firstPhaseId
+    ? attendances.filter((a) => a.phase_id === firstPhaseId && a.status === "attending").length
+    : 0;
+  const waitlistCount = firstPhaseId
+    ? attendances.filter((a) => a.phase_id === firstPhaseId && a.status === "waitlist").length
+    : 0;
 
   const handleEdit = () => {
-    router.push(`/schedule/${scheduleId}/edit`);
+    router.push(`/schedules/${scheduleId}/edit`);
   };
 
   return (
@@ -188,7 +219,7 @@ export default function ScheduleDetailPage() {
                         일정 수정
                       </button>
                       <button
-                        onClick={() => router.push(`/schedule/${scheduleId}/check-in`)}
+                        onClick={() => router.push(`/schedules/${scheduleId}/check-in`)}
                         className="flex w-full items-center gap-2 px-4 py-3 text-sm text-white transition-colors hover:bg-zinc-800"
                       >
                         <UserCheck className="h-4 w-4" />
@@ -327,26 +358,34 @@ export default function ScheduleDetailPage() {
         {/* 단계별 일정 (1차/2차) */}
         {schedule.phases.length > 0 && (
           <PhaseTimeline
-            phases={schedule.phases.map((phase) => ({
-              id: phase.id,
-              phase_number: phase.phase_number,
-              title: phase.title,
-              start_time: phase.start_time,
-              end_time: phase.end_time,
-              capacity: null,
-              created_at: null,
-              gym_id: phase.gym?.id || null,
-              location_text: phase.gym?.name || null,
-              notes: null,
-              schedule_id: scheduleId,
-              updated_at: null,
-              gym: phase.gym
-                ? {
-                    id: phase.gym.id,
-                    name: phase.gym.name,
-                    address: phase.gym.address,
-                  }
-                : null,
+            scheduleId={scheduleId}
+            userPhaseAttendances={userPhaseAttendances}
+            allAttendances={attendances.map((a) => ({
+              id: a.id,
+              user_id: a.user_id,
+              phase_id: a.phase_id,
+              status: a.status,
+              checked_in_at: a.checked_in_at,
+            }))}
+            isRsvpClosed={
+              schedule.rsvp_deadline ? new Date(schedule.rsvp_deadline) < new Date() : false
+            }
+            phases={schedule.phases.map((p) => ({
+              id: p.id,
+              phase_number: p.phase_number,
+              title: p.title,
+              start_time: p.start_time,
+              end_time: p.end_time,
+              phase_type: p.phase_type,
+              location_text: p.location_text,
+              location_kakao_id: p.location_kakao_id,
+              location_kakao_name: p.location_kakao_name,
+              location_kakao_address: p.location_kakao_address,
+              location_kakao_category: p.location_kakao_category,
+              capacity: p.capacity,
+              notes: p.notes,
+              gym_id: p.gym_id,
+              gym: p.gym,
             }))}
           />
         )}
@@ -366,7 +405,7 @@ export default function ScheduleDetailPage() {
         <AttendanceSection
           scheduleId={scheduleId}
           attendances={attendances}
-          totalCapacity={schedule.total_capacity || 0}
+          phases={schedule.phases}
           isCreator={isCreator}
         />
       </div>
@@ -378,6 +417,7 @@ export default function ScheduleDetailPage() {
           userAttendance={userAttendance}
           isFull={attendingCount >= (schedule.total_capacity || 0)}
           allowWaitlist={schedule.allow_waitlist || false}
+          rsvpDeadline={schedule.rsvp_deadline}
         />
       )}
     </div>
