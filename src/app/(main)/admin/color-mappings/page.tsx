@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Edit, Palette, Plus, Save, Trash2, X } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 
+import { Dropdown, type DropdownOption } from "@/components/dropdown";
+
 interface ColorMapping {
   id: string;
   gym_id: string;
@@ -248,20 +250,17 @@ export default function ColorMappingsPage() {
         </div>
 
         {/* 암장 필터 */}
-        <div className="mb-6">
-          <label className="mb-2 block text-sm font-medium text-zinc-300">암장 필터</label>
-          <select
+        <div className="mb-6 md:w-80">
+          <Dropdown
+            label="암장 필터"
+            options={[
+              { value: "", label: "전체 암장" },
+              ...gyms.map((gym) => ({ value: gym.id, label: gym.name })),
+            ]}
             value={selectedGym || ""}
-            onChange={(e) => setSelectedGym(e.target.value || null)}
-            className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none md:w-80"
-          >
-            <option value="">전체 암장</option>
-            {gyms.map((gym) => (
-              <option key={gym.id} value={gym.id}>
-                {gym.name}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setSelectedGym(value || null)}
+            placeholder="전체 암장"
+          />
         </div>
 
         {/* 매핑 목록 */}
@@ -383,24 +382,18 @@ export default function ColorMappingsPage() {
 
               <div className="space-y-4">
                 {/* 암장 선택 */}
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-300">
-                    암장 <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.gym_id}
-                    onChange={(e) => setFormData({ ...formData, gym_id: e.target.value })}
-                    disabled={!!editingMapping}
-                    className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none disabled:opacity-50"
-                  >
-                    <option value="">선택하세요</option>
-                    {gyms.map((gym) => (
-                      <option key={gym.id} value={gym.id}>
-                        {gym.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <Dropdown
+                  label="암장"
+                  required
+                  options={[
+                    { value: "", label: "선택하세요" },
+                    ...gyms.map((gym) => ({ value: gym.id, label: gym.name })),
+                  ]}
+                  value={formData.gym_id}
+                  onChange={(value) => setFormData({ ...formData, gym_id: value })}
+                  disabled={!!editingMapping}
+                  placeholder="선택하세요"
+                />
 
                 {/* 색깔 */}
                 <div>
