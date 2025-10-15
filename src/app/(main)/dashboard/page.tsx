@@ -150,7 +150,7 @@ export default function DashboardPage() {
                 (profile?.nickname ||
                   profile?.full_name ||
                   user?.user_metadata?.full_name ||
-                  "크")?.[0]
+                  "크루원")?.[0]
               }
             </div>
           )}
@@ -207,7 +207,7 @@ export default function DashboardPage() {
         >
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-xl font-bold text-white">다가오는 일정</h3>
-            <Link href="/schedule">
+            <Link href="/schedules">
               <button className="flex items-center gap-1 text-sm text-orange-500 transition-colors hover:text-orange-400">
                 전체보기
                 <ChevronRight className="h-4 w-4" />
