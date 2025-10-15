@@ -23,4 +23,3 @@ export function useUserStatsQuery() {
     gcTime: 1000 * 60 * 10, // 10분간 캐시 유지
   });
 }
-

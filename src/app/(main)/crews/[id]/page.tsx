@@ -217,7 +217,7 @@ export default function CrewDetailPage() {
               <button
                 onClick={handleJoinCrew}
                 disabled={joinCrewMutation.isPending || joinRequestMutation.isPending}
-                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-2 font-medium text-white transition-all hover:from-orange-600 hover:to-orange-700 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-2 font-medium text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
               >
                 {joinCrewMutation.isPending || joinRequestMutation.isPending ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -343,7 +343,7 @@ function MembersList({ members }: { members: Crew["members"]; _isAdmin?: boolean
       case "owner":
         return "text-orange-500 bg-orange-500/10";
       case "admin":
-        return "text-cyan-400 bg-cyan-400/10";
+        return "text-orange-400 bg-orange-500/10";
       default:
         return "text-zinc-400 bg-zinc-800/50";
     }
@@ -374,7 +374,7 @@ function MembersList({ members }: { members: Crew["members"]; _isAdmin?: boolean
             key={member.id}
             className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4"
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-cyan-400 font-semibold text-white">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500 font-semibold text-white">
               {member.user.nickname?.[0] || member.user.full_name?.[0] || "U"}
             </div>
             <div className="min-w-0 flex-1">
@@ -434,6 +434,11 @@ function ManagementSection({ crewId, isOwner }: { crewId: string; isOwner: boole
 
   // 초대 링크 관련 state
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteOptions, setInviteOptions] = useState({
+    maxUses: "",
+    expiresInDays: "",
+  });
 
   // React Query Hooks
   const { data: joinRequestsData, isLoading: loadingRequests } = useJoinRequestsQuery({
@@ -506,17 +511,46 @@ function ManagementSection({ crewId, isOwner }: { crewId: string; isOwner: boole
       case "owner":
         return "text-orange-500 bg-orange-500/10 border-orange-500/30";
       case "admin":
-        return "text-cyan-400 bg-cyan-400/10 border-cyan-400/30";
+        return "text-orange-400 bg-orange-500/10 border-orange-500/30";
       default:
         return "text-zinc-400 bg-zinc-800/50 border-zinc-700";
     }
   };
 
-  // 초대 링크 생성
-  const handleCreateInvite = async () => {
+  // 초대 링크 생성 모달 열기
+  const handleCreateInvite = () => {
+    setShowInviteModal(true);
+  };
+
+  // 초대 링크 생성 실행
+  const handleConfirmCreateInvite = async () => {
     try {
-      await createInviteMutation.mutateAsync({ crewId });
+      const options: {
+        crewId: string;
+        max_uses?: number;
+        expires_at?: string;
+      } = { crewId };
+
+      if (inviteOptions.maxUses) {
+        const maxUses = parseInt(inviteOptions.maxUses, 10);
+        if (!isNaN(maxUses) && maxUses > 0) {
+          options.max_uses = maxUses;
+        }
+      }
+
+      if (inviteOptions.expiresInDays) {
+        const days = parseInt(inviteOptions.expiresInDays, 10);
+        if (!isNaN(days) && days > 0) {
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + days);
+          options.expires_at = expiresAt.toISOString();
+        }
+      }
+
+      await createInviteMutation.mutateAsync(options);
       toast.success("초대 링크가 생성되었습니다");
+      setShowInviteModal(false);
+      setInviteOptions({ maxUses: "", expiresInDays: "" });
     } catch (err) {
       console.error("Error creating invite:", err);
       toast.error(err instanceof Error ? err.message : "초대 링크 생성에 실패했습니다");
@@ -555,19 +589,14 @@ function ManagementSection({ crewId, isOwner }: { crewId: string; isOwner: boole
       >
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Link2 className="h-6 w-6 text-cyan-400" />
+            <Link2 className="h-6 w-6 text-orange-500" />
             <h2 className="text-xl font-bold text-white">초대 링크 관리</h2>
           </div>
           <button
             onClick={handleCreateInvite}
-            disabled={createInviteMutation.isPending}
-            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-orange-500 to-cyan-400 px-4 py-2 text-sm font-semibold text-white transition-all hover:shadow-lg hover:shadow-orange-500/30 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
           >
-            {createInviteMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4" />
-            )}
+            <Plus className="h-4 w-4" />
             링크 생성
           </button>
         </div>
@@ -602,7 +631,7 @@ function ManagementSection({ crewId, isOwner }: { crewId: string; isOwner: boole
                 >
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex items-center gap-2">
-                      <code className="rounded bg-zinc-800 px-2 py-1 font-mono text-sm text-cyan-400">
+                      <code className="rounded bg-zinc-800 px-2 py-1 font-mono text-sm text-orange-400">
                         {invite.invite_code}
                       </code>
                       {isInactive && (
@@ -645,7 +674,7 @@ function ManagementSection({ crewId, isOwner }: { crewId: string; isOwner: boole
                     <button
                       onClick={() => handleCopyCode(invite.invite_code)}
                       disabled={isInactive}
-                      className="flex items-center gap-1 rounded-lg bg-cyan-500/10 px-3 py-2 text-sm font-medium text-cyan-400 transition-all hover:bg-cyan-500/20 disabled:opacity-50"
+                      className="flex items-center gap-1 rounded-lg bg-orange-500/10 px-3 py-2 text-sm font-medium text-orange-400 transition-all hover:bg-orange-500/20 disabled:opacity-50"
                     >
                       {copiedCode === invite.invite_code ? (
                         <>
@@ -712,7 +741,7 @@ function ManagementSection({ crewId, isOwner }: { crewId: string; isOwner: boole
                 className="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-cyan-400 font-semibold text-white">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-orange-500 font-semibold text-white">
                     {request.user.nickname?.[0] || request.user.full_name?.[0] || "?"}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -775,7 +804,7 @@ function ManagementSection({ crewId, isOwner }: { crewId: string; isOwner: boole
         className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 backdrop-blur-xl"
       >
         <div className="mb-4 flex items-center gap-2">
-          <Shield className="h-6 w-6 text-cyan-400" />
+          <Shield className="h-6 w-6 text-orange-500" />
           <h2 className="text-xl font-bold text-white">멤버 관리</h2>
         </div>
 
@@ -792,7 +821,7 @@ function ManagementSection({ crewId, isOwner }: { crewId: string; isOwner: boole
                 className="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-cyan-400 font-semibold text-white">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-orange-500 font-semibold text-white">
                     {member.user.nickname?.[0] || member.user.full_name?.[0] || "U"}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -861,6 +890,89 @@ function ManagementSection({ crewId, isOwner }: { crewId: string; isOwner: boole
           </div>
         )}
       </motion.div>
+
+      {/* 초대 링크 생성 모달 */}
+      {showInviteModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => {
+            setShowInviteModal(false);
+            setInviteOptions({ maxUses: "", expiresInDays: "" });
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6"
+          >
+            <h3 className="mb-4 text-xl font-bold text-white">초대 링크 생성</h3>
+
+            <div className="space-y-4">
+              {/* 최대 사용 횟수 */}
+              <div>
+                <label className="mb-2 block text-sm font-medium text-zinc-300">
+                  최대 사용 횟수
+                </label>
+                <input
+                  type="number"
+                  value={inviteOptions.maxUses}
+                  onChange={(e) => setInviteOptions({ ...inviteOptions, maxUses: e.target.value })}
+                  placeholder="무제한"
+                  min="1"
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-white placeholder-zinc-500 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none"
+                />
+                <p className="mt-1 text-xs text-zinc-500">비워두면 무제한으로 사용 가능합니다</p>
+              </div>
+
+              {/* 만료 기간 */}
+              <div>
+                <label className="mb-2 block text-sm font-medium text-zinc-300">
+                  만료 기간 (일)
+                </label>
+                <input
+                  type="number"
+                  value={inviteOptions.expiresInDays}
+                  onChange={(e) =>
+                    setInviteOptions({ ...inviteOptions, expiresInDays: e.target.value })
+                  }
+                  placeholder="만료 없음"
+                  min="1"
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-white placeholder-zinc-500 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none"
+                />
+                <p className="mt-1 text-xs text-zinc-500">비워두면 만료 없이 사용 가능합니다</p>
+              </div>
+            </div>
+
+            {/* 버튼 */}
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowInviteModal(false);
+                  setInviteOptions({ maxUses: "", expiresInDays: "" });
+                }}
+                className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-700"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleConfirmCreateInvite}
+                disabled={createInviteMutation.isPending}
+                className="flex-1 rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
+              >
+                {createInviteMutation.isPending ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    생성 중...
+                  </div>
+                ) : (
+                  "생성"
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
