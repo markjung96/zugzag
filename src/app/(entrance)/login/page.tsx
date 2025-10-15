@@ -3,8 +3,8 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, Mail, Lock, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 
 import { useToast } from "@/components/toast-provider";
 import { signInWithGoogle, signInWithGithub, signInWithEmail } from "@/lib/auth/auth-helpers";
@@ -14,7 +14,24 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const toast = useToast();
+
+  // URL 파라미터에서 에러 확인
+  useEffect(() => {
+    const error = searchParams.get("error");
+    const detail = searchParams.get("detail");
+
+    if (error === "auth_callback_failed") {
+      toast.error(
+        detail
+          ? `인증에 실패했습니다: ${detail}`
+          : "이메일 인증에 실패했습니다. Supabase 설정을 확인해주세요.",
+      );
+    } else if (error) {
+      toast.error(`오류가 발생했습니다: ${error}`);
+    }
+  }, [searchParams, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +40,27 @@ export default function LoginPage() {
     try {
       await signInWithEmail(email, password);
       toast.success("로그인에 성공했습니다!");
-      router.push("/dashboard");
+
+      // 프로필 확인하여 온보딩 여부 체크
+      try {
+        const response = await fetch("/api/users/me");
+        if (response.ok) {
+          const data = await response.json();
+          // climbing_level이 없으면 온보딩으로, 있으면 대시보드로
+          if (data.profile?.climbing_level) {
+            router.push("/dashboard");
+          } else {
+            router.push("/onboarding");
+          }
+        } else {
+          // 프로필을 불러오지 못하면 기본적으로 대시보드로
+          router.push("/dashboard");
+        }
+      } catch (profileError) {
+        console.error("프로필 확인 실패:", profileError);
+        // 에러 발생 시에도 대시보드로 이동 (미들웨어나 온보딩 페이지에서 다시 체크)
+        router.push("/dashboard");
+      }
     } catch (err) {
       console.error("로그인 실패:", err);
       toast.error("이메일 또는 비밀번호가 올바르지 않습니다.");

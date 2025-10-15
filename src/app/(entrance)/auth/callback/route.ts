@@ -23,7 +23,14 @@ export async function GET(request: NextRequest) {
 
       if (exchangeError) {
         console.error("세션 교환 오류:", exchangeError);
-        return NextResponse.redirect(`${requestUrl.origin}/login?error=auth_callback_failed`);
+        console.error("에러 상세:", {
+          message: exchangeError.message,
+          status: exchangeError.status,
+          code: exchangeError.code,
+        });
+        return NextResponse.redirect(
+          `${requestUrl.origin}/login?error=auth_callback_failed&detail=${encodeURIComponent(exchangeError.message)}`,
+        );
       }
 
       // 사용자 정보 확인

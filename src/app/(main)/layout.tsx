@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import { Home, Users, Calendar, User, Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 import { ToastProvider } from "@/components/toast-provider";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -16,11 +16,19 @@ export default function MainLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { data: currentUserData, isLoading: isLoadingUser } = useCurrentUser();
 
   const user = currentUserData?.user;
   const profile = currentUserData?.profile;
+
+  // 온보딩 체크 - climbing_level이 없으면 온보딩 페이지로
+  useEffect(() => {
+    if (!isLoadingUser && currentUserData?.profile && !currentUserData.profile.climbing_level) {
+      router.push("/onboarding");
+    }
+  }, [isLoadingUser, currentUserData, router]);
 
   const navigation = [
     { name: "대시보드", href: "/dashboard", icon: Home },

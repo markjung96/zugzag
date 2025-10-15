@@ -36,6 +36,12 @@ export default function DashboardPage() {
     return null;
   }
 
+  // 온보딩이 완료되지 않은 경우 온보딩 페이지로
+  if (!isLoadingUser && currentUserData?.profile && !currentUserData.profile.climbing_level) {
+    router.push("/onboarding");
+    return null;
+  }
+
   if (isLoadingUser || isLoadingCrews || isLoadingSchedules) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-950">
