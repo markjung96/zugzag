@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, Mail, Lock, User, Loader2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 
 import { useToast } from "@/components/toast-provider";
@@ -16,8 +16,7 @@ function SignUpContent() {
   const [fullName, setFullName] = useState("");
   const [nickname, setNickname] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const router = useRouter();
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
   const searchParams = useSearchParams();
   const inviteCode = searchParams.get("invite"); // 초대 코드 가져오기
   const toast = useToast();
@@ -57,19 +56,18 @@ function SignUpContent() {
     setIsLoading(true);
 
     try {
-      await signUpWithEmail(email, password, {
-        full_name: fullName,
-        nickname: nickname,
-      });
+      await signUpWithEmail(
+        email,
+        password,
+        {
+          full_name: fullName,
+          nickname: nickname,
+        },
+        inviteCode,
+      );
 
-      toast.success("가입이 완료되었습니다!");
-      setSuccess(true);
-
-      // 2초 후 온보딩 페이지로 리다이렉트 (초대 코드가 있으면 전달)
-      setTimeout(() => {
-        const onboardingUrl = inviteCode ? `/onboarding?invite=${inviteCode}` : "/onboarding";
-        router.push(onboardingUrl);
-      }, 2000);
+      // 이메일 인증 안내 화면 표시
+      setShowEmailVerification(true);
     } catch (err: unknown) {
       console.error("회원가입 실패:", err);
 
@@ -110,7 +108,7 @@ function SignUpContent() {
     }
   };
 
-  if (success) {
+  if (showEmailVerification) {
     return (
       <div className="relative min-h-screen overflow-hidden bg-zinc-950">
         <div className="absolute inset-0 opacity-20">
@@ -130,7 +128,7 @@ function SignUpContent() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center"
+            className="w-full max-w-md text-center"
           >
             <motion.div
               initial={{ scale: 0 }}
@@ -139,7 +137,7 @@ function SignUpContent() {
               className="mb-6 flex justify-center"
             >
               <div className="rounded-full bg-gradient-to-r from-orange-500 to-cyan-400 p-4">
-                <CheckCircle2 className="h-16 w-16 text-white" />
+                <Mail className="h-16 w-16 text-white" />
               </div>
             </motion.div>
 
@@ -149,26 +147,69 @@ function SignUpContent() {
               transition={{ delay: 0.3 }}
               className="mb-3 text-xl font-bold text-white md:mb-4 md:text-2xl lg:text-3xl"
             >
-              가입이 완료되었습니다!
+              이메일을 확인해주세요
             </motion.h1>
 
-            <motion.p
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="mb-2 text-sm text-zinc-400 md:text-base"
+              className="mb-6 space-y-3 md:mb-8"
             >
-              프로필을 완성하고 크루를 선택해주세요!
-            </motion.p>
+              <p className="text-sm text-zinc-400 md:text-base">
+                <span className="font-semibold text-orange-400">{email}</span>
+                <br />
+                으로 인증 메일을 발송했습니다.
+              </p>
+              <p className="text-sm text-zinc-400 md:text-base">
+                메일함에서 인증 링크를 클릭하여
+                <br />
+                회원가입을 완료해주세요.
+              </p>
+            </motion.div>
 
-            <motion.p
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="text-xs text-zinc-500 md:text-sm lg:text-base"
+              className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 backdrop-blur-sm md:p-6"
             >
-              잠시 후 온보딩 페이지로 이동합니다...
-            </motion.p>
+              <div className="mb-3 flex items-center justify-center gap-2 text-cyan-400">
+                <CheckCircle2 className="h-5 w-5" />
+                <span className="text-sm font-semibold md:text-base">확인 사항</span>
+              </div>
+              <ul className="space-y-2 text-left text-xs text-zinc-500 md:text-sm">
+                <li className="flex items-start gap-2">
+                  <span className="mt-1 block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-orange-500" />
+                  <span>메일이 오지 않았다면 스팸 메일함을 확인해주세요</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1 block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-orange-500" />
+                  <span>인증 링크는 24시간 동안 유효합니다</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1 block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-orange-500" />
+                  <span>인증 완료 후 자동으로 온보딩 페이지로 이동합니다</span>
+                </li>
+              </ul>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="mt-6 md:mt-8"
+            >
+              <Link href="/login">
+                <motion.button
+                  className="text-sm font-medium text-zinc-400 transition-colors hover:text-white md:text-base"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  로그인 페이지로 돌아가기
+                </motion.button>
+              </Link>
+            </motion.div>
           </motion.div>
         </div>
       </div>

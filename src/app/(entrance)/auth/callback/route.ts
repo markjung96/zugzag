@@ -42,12 +42,21 @@ export async function GET(request: NextRequest) {
         .eq("id", user.id)
         .single();
 
+      // 초대 코드 확인
+      const inviteCode = requestUrl.searchParams.get("invite");
+
       // climbing_level이 없으면 신규 유저 → 온보딩
       // climbing_level이 있으면 기존 유저 → 대시보드
-      const redirectUrl =
-        !profile || !profile.climbing_level
-          ? `${requestUrl.origin}/onboarding`
-          : `${requestUrl.origin}/dashboard`;
+      let redirectUrl: string;
+      if (!profile || !profile.climbing_level) {
+        // 신규 유저 - 온보딩으로 (초대 코드 포함)
+        redirectUrl = inviteCode
+          ? `${requestUrl.origin}/onboarding?invite=${inviteCode}`
+          : `${requestUrl.origin}/onboarding`;
+      } else {
+        // 기존 유저 - 대시보드로
+        redirectUrl = `${requestUrl.origin}/dashboard`;
+      }
 
       return NextResponse.redirect(redirectUrl);
     } catch (error) {

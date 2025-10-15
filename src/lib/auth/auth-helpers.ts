@@ -68,15 +68,21 @@ export const signUpWithEmail = async (
     nickname?: string;
     avatar_url?: string;
   },
+  inviteCode?: string | null,
 ) => {
   const supabase = createClient();
+
+  // 초대 코드가 있으면 콜백 URL에 포함
+  const redirectUrl = inviteCode
+    ? `${window.location.origin}/auth/callback?invite=${inviteCode}`
+    : `${window.location.origin}/auth/callback`;
 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: metadata,
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
+      emailRedirectTo: redirectUrl,
     },
   });
 
