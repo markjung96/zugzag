@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { signOut } from "@/lib/auth/auth-helpers";
 
 import { useUserCrewsQuery } from "../crews/_hooks/use-user-crews-query";
 
@@ -68,10 +69,15 @@ export default function ProfilePage() {
     },
   ];
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (confirm("로그아웃 하시겠습니까?")) {
-      // TODO: 실제 로그아웃 처리
-      router.push("/login");
+      try {
+        await signOut();
+        router.push("/login");
+      } catch (error) {
+        console.error("로그아웃 실패:", error);
+        alert("로그아웃에 실패했습니다. 다시 시도해주세요.");
+      }
     }
   };
 
