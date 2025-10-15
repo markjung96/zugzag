@@ -24,6 +24,7 @@ import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { useState } from "react";
 
+import { Dropdown } from "@/components/dropdown";
 import { useToast } from "@/components/toast-provider";
 import type { CrewDetail } from "@/lib/api/crew-helpers";
 import type { Tables } from "@/lib/supabase/database.types";
@@ -814,22 +815,25 @@ function ManagementSection({ crewId, isOwner }: { crewId: string; isOwner: boole
 
                 <div className="flex items-center gap-2">
                   {/* 역할 변경 드롭다운 */}
-                  <select
-                    value={member.role}
-                    onChange={(e) =>
-                      handleRoleChange(member.id, e.target.value as "owner" | "admin" | "member")
-                    }
-                    disabled={
-                      member.role === "owner" ||
-                      (!isOwner && member.role === "admin") ||
-                      updateRoleMutation.isPending
-                    }
-                    className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50 ${getRoleColor(member.role)}`}
-                  >
-                    {isOwner && <option value="owner">크루장</option>}
-                    <option value="admin">운영진</option>
-                    <option value="member">크루원</option>
-                  </select>
+                  <div className="min-w-[120px]">
+                    <Dropdown
+                      options={[
+                        ...(isOwner ? [{ value: "owner", label: "크루장" }] : []),
+                        { value: "admin", label: "운영진" },
+                        { value: "member", label: "크루원" },
+                      ]}
+                      value={member.role}
+                      onChange={(value) =>
+                        handleRoleChange(member.id, value as "owner" | "admin" | "member")
+                      }
+                      disabled={
+                        member.role === "owner" ||
+                        (!isOwner && member.role === "admin") ||
+                        updateRoleMutation.isPending
+                      }
+                      className={`${getRoleColor(member.role)}`}
+                    />
+                  </div>
 
                   {/* 강제 탈퇴 버튼 */}
                   {member.role !== "owner" && (
