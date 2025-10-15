@@ -47,6 +47,8 @@ function OnboardingContent() {
   const toast = useToast();
 
   // Step 1: 프로필 완성
+  const [fullName, setFullName] = useState("");
+  const [nickname, setNickname] = useState("");
   const [climbingLevel, setClimbingLevel] = useState("");
   const [bio, setBio] = useState("");
 
@@ -111,6 +113,11 @@ function OnboardingContent() {
   };
 
   const handleProfileComplete = async () => {
+    if (!fullName.trim()) {
+      toast.error("이름을 입력해주세요.");
+      return;
+    }
+
     if (!climbingLevel) {
       toast.error("클라이밍 레벨을 선택해주세요.");
       return;
@@ -131,6 +138,8 @@ function OnboardingContent() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          full_name: fullName.trim(),
+          nickname: nickname.trim() || null,
           climbing_level: climbingLevel,
           bio: bio || null,
         }),
@@ -259,6 +268,10 @@ function OnboardingContent() {
               {step === 1 ? (
                 <ProfileStep
                   key="profile"
+                  fullName={fullName}
+                  setFullName={setFullName}
+                  nickname={nickname}
+                  setNickname={setNickname}
                   climbingLevel={climbingLevel}
                   setClimbingLevel={setClimbingLevel}
                   bio={bio}
@@ -285,6 +298,10 @@ function OnboardingContent() {
 }
 
 function ProfileStep({
+  fullName,
+  setFullName,
+  nickname,
+  setNickname,
   climbingLevel,
   setClimbingLevel,
   bio,
@@ -292,6 +309,10 @@ function ProfileStep({
   isLoading,
   onNext,
 }: {
+  fullName: string;
+  setFullName: (value: string) => void;
+  nickname: string;
+  setNickname: (value: string) => void;
   climbingLevel: string;
   setClimbingLevel: (value: string) => void;
   bio: string;
@@ -321,6 +342,37 @@ function ProfileStep({
       </p>
 
       <div className="space-y-6">
+        {/* 이름 입력 */}
+        <div>
+          <label htmlFor="fullName" className="mb-2 block text-sm font-medium text-zinc-300">
+            이름 <span className="text-orange-500">*</span>
+          </label>
+          <input
+            id="fullName"
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="본명을 입력해주세요 (예: 홍길동)"
+            className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-white placeholder-zinc-500 backdrop-blur-sm transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none"
+          />
+        </div>
+
+        {/* 닉네임 입력 (선택) */}
+        <div>
+          <label htmlFor="nickname" className="mb-2 block text-sm font-medium text-zinc-300">
+            닉네임 (선택)
+          </label>
+          <input
+            id="nickname"
+            type="text"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            placeholder="닉네임을 입력해주세요 (예: 산토끼)"
+            className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-white placeholder-zinc-500 backdrop-blur-sm transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 focus:outline-none"
+          />
+          <p className="mt-1 text-xs text-zinc-500">닉네임을 입력하지 않으면 이름으로 표시됩니다</p>
+        </div>
+
         {/* 클라이밍 레벨 선택 */}
         <div>
           <label className="mb-3 block text-sm font-medium text-zinc-300">
@@ -373,10 +425,10 @@ function ProfileStep({
         <motion.button
           type="button"
           onClick={onNext}
-          disabled={isLoading || !climbingLevel}
+          disabled={isLoading || !climbingLevel || !fullName.trim()}
           className="group relative mt-6 w-full overflow-hidden rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 font-semibold text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50"
-          whileHover={!isLoading && climbingLevel ? { scale: 1.01, y: -2 } : {}}
-          whileTap={!isLoading && climbingLevel ? { scale: 0.99 } : {}}
+          whileHover={!isLoading && climbingLevel && fullName.trim() ? { scale: 1.01, y: -2 } : {}}
+          whileTap={!isLoading && climbingLevel && fullName.trim() ? { scale: 0.99 } : {}}
         >
           <span className="relative flex items-center justify-center gap-2">
             {isLoading ? (
