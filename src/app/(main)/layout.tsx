@@ -17,7 +17,7 @@ export default function MainLayout({
 }>) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { data: currentUserData } = useCurrentUser();
+  const { data: currentUserData, isLoading: isLoadingUser } = useCurrentUser();
 
   const user = currentUserData?.user;
   const profile = currentUserData?.profile;
@@ -78,32 +78,44 @@ export default function MainLayout({
           <div className="border-t border-zinc-800 p-4">
             <Link href="/profile">
               <div className="flex items-center gap-3 rounded-xl bg-zinc-800/50 px-4 py-3 transition-colors hover:bg-zinc-800">
-                {profile?.avatar_url || user?.user_metadata?.avatar_url ? (
-                  <div className="relative h-10 w-10 overflow-hidden rounded-full">
-                    <Image
-                      src={profile?.avatar_url || user?.user_metadata?.avatar_url}
-                      alt={profile?.nickname || profile?.full_name || "사용자"}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                  </div>
+                {isLoadingUser ? (
+                  <>
+                    <div className="h-10 w-10 animate-pulse rounded-full bg-zinc-700"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-20 animate-pulse rounded bg-zinc-700"></div>
+                      <div className="h-3 w-32 animate-pulse rounded bg-zinc-700"></div>
+                    </div>
+                  </>
                 ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-cyan-400">
-                    <User className="h-5 w-5 text-white" />
-                  </div>
+                  <>
+                    {profile?.avatar_url || user?.user_metadata?.avatar_url ? (
+                      <div className="relative h-10 w-10 overflow-hidden rounded-full">
+                        <Image
+                          src={profile?.avatar_url || user?.user_metadata?.avatar_url}
+                          alt={profile?.nickname || profile?.full_name || "사용자"}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-cyan-400">
+                        <User className="h-5 w-5 text-white" />
+                      </div>
+                    )}
+                    <div className="flex-1 overflow-hidden">
+                      <p className="truncate text-sm font-medium text-white">
+                        {profile?.nickname ||
+                          profile?.full_name ||
+                          user?.user_metadata?.full_name ||
+                          "크루원"}
+                      </p>
+                      <p className="truncate text-xs text-zinc-400">
+                        {user?.email || "guest@zugzag.com"}
+                      </p>
+                    </div>
+                  </>
                 )}
-                <div className="flex-1 overflow-hidden">
-                  <p className="truncate text-sm font-medium text-white">
-                    {profile?.nickname ||
-                      profile?.full_name ||
-                      user?.user_metadata?.full_name ||
-                      "크루원"}
-                  </p>
-                  <p className="truncate text-xs text-zinc-400">
-                    {user?.email || "guest@zugzag.com"}
-                  </p>
-                </div>
               </div>
             </Link>
           </div>
@@ -172,32 +184,47 @@ export default function MainLayout({
           <div className="border-t border-zinc-800 p-4">
             <Link href="/profile" onClick={() => setIsSidebarOpen(false)}>
               <div className="flex items-center gap-3 rounded-xl bg-zinc-800/50 px-4 py-3 transition-colors hover:bg-zinc-800">
-                {profile?.avatar_url || user?.user_metadata?.avatar_url ? (
-                  <div className="relative h-10 w-10 overflow-hidden rounded-full">
-                    <Image
-                      src={profile?.avatar_url || user?.user_metadata?.avatar_url}
-                      alt={profile?.nickname || profile?.full_name || "사용자"}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                  </div>
+                {isLoadingUser ? (
+                  <>
+                    {/* Avatar Skeleton */}
+                    <div className="h-10 w-10 animate-pulse rounded-full bg-zinc-700"></div>
+                    <div className="flex-1 space-y-2">
+                      {/* Name Skeleton */}
+                      <div className="h-4 w-20 animate-pulse rounded bg-zinc-700"></div>
+                      {/* Email Skeleton */}
+                      <div className="h-3 w-32 animate-pulse rounded bg-zinc-700"></div>
+                    </div>
+                  </>
                 ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-cyan-400">
-                    <User className="h-5 w-5 text-white" />
-                  </div>
+                  <>
+                    {profile?.avatar_url || user?.user_metadata?.avatar_url ? (
+                      <div className="relative h-10 w-10 overflow-hidden rounded-full">
+                        <Image
+                          src={profile?.avatar_url || user?.user_metadata?.avatar_url}
+                          alt={profile?.nickname || profile?.full_name || "사용자"}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-cyan-400">
+                        <User className="h-5 w-5 text-white" />
+                      </div>
+                    )}
+                    <div className="flex-1 overflow-hidden">
+                      <p className="truncate text-sm font-medium text-white">
+                        {profile?.nickname ||
+                          profile?.full_name ||
+                          user?.user_metadata?.full_name ||
+                          "크루원"}
+                      </p>
+                      <p className="truncate text-xs text-zinc-400">
+                        {user?.email || "guest@zugzag.com"}
+                      </p>
+                    </div>
+                  </>
                 )}
-                <div className="flex-1 overflow-hidden">
-                  <p className="truncate text-sm font-medium text-white">
-                    {profile?.nickname ||
-                      profile?.full_name ||
-                      user?.user_metadata?.full_name ||
-                      "크루원"}
-                  </p>
-                  <p className="truncate text-xs text-zinc-400">
-                    {user?.email || "guest@zugzag.com"}
-                  </p>
-                </div>
               </div>
             </Link>
           </div>
