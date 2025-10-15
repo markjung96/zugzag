@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Calendar, Users, ArrowLeft, AlertCircle } from "lucide-react";
+import { Users, ArrowLeft, AlertCircle } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 

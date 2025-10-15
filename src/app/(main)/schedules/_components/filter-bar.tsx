@@ -3,8 +3,8 @@
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 
-import { Dropdown } from "@/components/dropdown";
 import { useUserCrewsQuery } from "@/app/(main)/crews/_hooks/use-user-crews-query";
+import { Dropdown } from "@/components/dropdown";
 
 import type { FilterOptions } from "../page";
 

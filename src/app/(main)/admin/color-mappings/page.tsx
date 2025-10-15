@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Edit, Palette, Plus, Save, Trash2, X } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 
-import { Dropdown, type DropdownOption } from "@/components/dropdown";
+import { Dropdown } from "@/components/dropdown";
 
 interface ColorMapping {
   id: string;

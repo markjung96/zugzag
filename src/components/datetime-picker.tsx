@@ -234,8 +234,9 @@ export function DateTimePicker({
         currentDate.getMonth() === selectedDate.getMonth() &&
         currentDate.getDate() === selectedDate.getDate();
       const isToday = currentDate.getTime() === today.getTime();
-      const isDisabled =
-        (min && dateString < min.split("T")[0]) || (max && dateString > max.split("T")[0]);
+      const isDisabled = Boolean(
+        (min && dateString < min.split("T")[0]) || (max && dateString > max.split("T")[0]),
+      );
 
       days.push(
         <button
