@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-10-14T12:07:58.915Z",
+  "timestamp": "2025-10-16T01:08:59.116Z",
   "totalProcessed": 100,
   "updated": 0,
-  "notFound": 4,
+  "notFound": 0,
   "failed": 0,
   "successRate": 0,
   "completedGyms": []

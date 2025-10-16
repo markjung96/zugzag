@@ -11,7 +11,7 @@ import {
   ChevronRight,
   MapPin,
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 
 import { useToast } from "@/components/toast-provider";
@@ -41,7 +41,6 @@ function OnboardingContent() {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const inviteCode = searchParams.get("invite"); // 초대 코드 가져오기
   const toast = useToast();
@@ -58,37 +57,17 @@ function OnboardingContent() {
   const [loadingCrews, setLoadingCrews] = useState(false);
 
   useEffect(() => {
-    // 사용자 정보 및 프로필 상태 확인
-    const checkUser = async () => {
+    // ✅ Middleware에서 이미 로그인 체크와 온보딩 완료 여부를 확인하므로
+    // 여기서는 사용자 ID만 가져오면 됩니다
+    const loadUser = async () => {
       const user = await getCurrentUser();
-      if (!user) {
-        router.push("/login");
-        return;
-      }
-      setUserId(user.id);
-
-      // 프로필 상태 확인 - 이미 온보딩이 완료되었는지 확인
-      try {
-        const response = await fetch("/api/users/me");
-        if (response.ok) {
-          const data = await response.json();
-          // climbing_level이 이미 설정되어 있으면 온보딩 완료로 간주
-          if (data.profile?.climbing_level) {
-            // 초대 코드가 있으면 초대 페이지로, 없으면 대시보드로
-            if (inviteCode) {
-              router.push(`/crews/join/${inviteCode}`);
-            } else {
-              router.push("/dashboard");
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error checking profile:", error);
+      if (user) {
+        setUserId(user.id);
       }
     };
 
-    checkUser();
-  }, [router, inviteCode]);
+    loadUser();
+  }, []);
 
   useEffect(() => {
     // Step 2에서 크루 목록 불러오기
@@ -153,7 +132,8 @@ function OnboardingContent() {
 
       // 초대 코드가 있으면 바로 초대 링크 페이지로 이동
       if (inviteCode) {
-        router.push(`/crews/join/${inviteCode}`);
+        // ✅ 하드 리프레시로 프로필 업데이트 반영
+        window.location.href = `/crews/join/${inviteCode}`;
       } else {
         setStep(2);
       }
@@ -182,8 +162,8 @@ function OnboardingContent() {
         toast.success("크루에 가입했습니다!");
       }
 
-      // 완료 - 대시보드로 이동
-      router.push("/dashboard");
+      // ✅ 하드 리프레시로 프로필 업데이트 반영
+      window.location.href = "/dashboard";
     } catch (error) {
       console.error("Error joining crew:", error);
       toast.error("크루 가입에 실패했습니다.");
@@ -195,7 +175,8 @@ function OnboardingContent() {
     if (step === 1) {
       setStep(2);
     } else {
-      router.push("/dashboard");
+      // ✅ 하드 리프레시
+      window.location.href = "/dashboard";
     }
   };
 

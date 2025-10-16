@@ -71,7 +71,6 @@ export const signUpWithEmail = async (
   inviteCode?: string | null,
 ) => {
   const supabase = createClient();
-
   // 초대 코드가 있으면 콜백 URL에 포함
   const redirectUrl = inviteCode
     ? `${window.location.origin}/auth/callback?invite=${inviteCode}`
@@ -87,7 +86,12 @@ export const signUpWithEmail = async (
   });
 
   if (error) {
-    console.error("회원가입 오류:", error);
+    console.error("❌ [signUpWithEmail] 회원가입 오류:", error);
+    console.error("에러 상세:", {
+      message: error.message,
+      status: error.status,
+      name: error.name,
+    });
     throw error;
   }
 

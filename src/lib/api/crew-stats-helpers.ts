@@ -199,7 +199,8 @@ export async function getCrewBasicStats(crewId: string): Promise<CrewBasicStats>
     .select("*, schedules!inner(crew_id)", { count: "exact", head: true })
     .eq("schedules.crew_id", crewId)
     .eq("status", "no_show");
-  const noShowRate = totalAttendances && totalAttendances > 0 ? (noShowCount! / totalAttendances) * 100 : 0;
+  const noShowRate =
+    totalAttendances && totalAttendances > 0 ? (noShowCount! / totalAttendances) * 100 : 0;
 
   // 11. 신규 멤버 전환율 (최근 3개월 가입자 중 첫 참석까지의 비율)
   const threeMonthsAgo = new Date();
@@ -522,28 +523,25 @@ export async function getTimeDistribution(
     throw new Error(`Failed to fetch time distribution: ${error?.message || "No data"}`);
   }
 
-  // 시간대별 카운트 (0-5: 새벽, 6-11: 오전, 12-17: 오후, 18-23: 저녁)
+  // 시간대별 카운트 (8-11: 오전, 12-17: 오후, 18-23: 저녁)
   const timeSlots = {
-    dawn: 0, // 0-5시
-    morning: 0, // 6-11시
+    morning: 0, // 8-11시
     afternoon: 0, // 12-17시
     evening: 0, // 18-23시
   };
 
   schedules.forEach((schedule) => {
     const hour = new Date(schedule.event_date).getHours();
-    if (hour >= 0 && hour < 6) timeSlots.dawn++;
-    else if (hour >= 6 && hour < 12) timeSlots.morning++;
+    if (hour >= 8 && hour < 12) timeSlots.morning++;
     else if (hour >= 12 && hour < 18) timeSlots.afternoon++;
-    else timeSlots.evening++;
+    else if (hour >= 18 && hour <= 23) timeSlots.evening++;
   });
 
   return {
     distribution: [
-      { timeSlot: "새벽 (0-5시)", count: timeSlots.dawn },
-      { timeSlot: "오전 (6-11시)", count: timeSlots.morning },
-      { timeSlot: "오후 (12-17시)", count: timeSlots.afternoon },
-      { timeSlot: "저녁 (18-23시)", count: timeSlots.evening },
+      { timeSlot: "오전 (8-12시)", count: timeSlots.morning },
+      { timeSlot: "오후 (12-18시)", count: timeSlots.afternoon },
+      { timeSlot: "저녁 (18-00시)", count: timeSlots.evening },
     ],
   };
 }
@@ -652,10 +650,9 @@ export async function getTimeAttendanceRate(
   const timeStats: {
     [key: string]: { total: number; attended: number };
   } = {
-    "새벽 (0-5시)": { total: 0, attended: 0 },
-    "오전 (6-11시)": { total: 0, attended: 0 },
-    "오후 (12-17시)": { total: 0, attended: 0 },
-    "저녁 (18-23시)": { total: 0, attended: 0 },
+    "오전 (8-12시)": { total: 0, attended: 0 },
+    "오후 (12-18시)": { total: 0, attended: 0 },
+    "저녁 (18-00시)": { total: 0, attended: 0 },
   };
 
   schedules?.forEach((schedule) => {
@@ -665,10 +662,10 @@ export async function getTimeAttendanceRate(
 
     const hour = parseInt(startTime.split(":")[0]);
     let timeSlot: string;
-    if (hour >= 0 && hour < 6) timeSlot = "새벽 (0-5시)";
-    else if (hour >= 6 && hour < 12) timeSlot = "오전 (6-11시)";
-    else if (hour >= 12 && hour < 18) timeSlot = "오후 (12-17시)";
-    else timeSlot = "저녁 (18-23시)";
+    if (hour >= 8 && hour < 12) timeSlot = "오전 (8-12시)";
+    else if (hour >= 12 && hour < 18) timeSlot = "오후 (12-18시)";
+    else if (hour >= 18 && hour <= 23) timeSlot = "저녁 (18-00시)";
+    else return; // 해당되지 않는 시간대는 무시
 
     const attendances = schedule.attendances as Array<{
       id: string;

@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, Lock, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 import { useToast } from "@/components/toast-provider";
@@ -15,7 +14,6 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [isValidToken, setIsValidToken] = useState(false);
   const [isCheckingToken, setIsCheckingToken] = useState(true);
-  const router = useRouter();
   const toast = useToast();
 
   useEffect(() => {
@@ -86,9 +84,10 @@ export default function ResetPasswordPage() {
       toast.success("비밀번호가 성공적으로 변경되었습니다!");
       setSuccess(true);
 
+      // ✅ 하드 리프레시로 세션 쿠키 동기화 보장
       // 2초 후 로그인 페이지로 리다이렉트
       setTimeout(() => {
-        router.push("/login");
+        window.location.href = "/login";
       }, 2000);
     } catch (err: unknown) {
       console.error("비밀번호 재설정 실패:", err);

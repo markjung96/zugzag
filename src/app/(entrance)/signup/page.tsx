@@ -49,14 +49,23 @@ function SignUpContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    /* eslint-disable no-console */
+    // 디버깅용 로그 (docs/auth/EMAIL_AUTH_DEBUG_GUIDE.md 참고)
+    console.log("🔹 [회원가입 시작]");
+    console.log("이메일:", email);
+    console.log("초대 코드:", inviteCode);
+
     if (!validateForm()) {
+      console.log("❌ [검증 실패] 폼 유효성 검사 실패");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      await signUpWithEmail(
+      console.log("📤 [API 호출] signUpWithEmail 시작");
+
+      const result = await signUpWithEmail(
         email,
         password,
         {
@@ -66,10 +75,26 @@ function SignUpContent() {
         inviteCode,
       );
 
+      console.log("✅ [성공] 회원가입 완료");
+      console.log("사용자 ID:", result?.user?.id);
+      console.log("이메일:", result?.user?.email);
+      console.log("이메일 인증 상태:", result?.user?.email_confirmed_at);
+
       // 이메일 인증 안내 화면 표시
       setShowEmailVerification(true);
     } catch (err: unknown) {
-      console.error("회원가입 실패:", err);
+      console.error("❌ [실패] 회원가입 오류:", err);
+
+      // 에러 상세 정보 로깅
+      if (err instanceof Error) {
+        console.error("에러 메시지:", err.message);
+        console.error("에러 스택:", err.stack);
+      }
+
+      // Supabase 에러 객체인 경우
+      if (typeof err === "object" && err !== null) {
+        console.error("에러 상세:", JSON.stringify(err, null, 2));
+      }
 
       const errorMessage = err instanceof Error ? err.message : String(err);
       if (errorMessage?.includes("already registered")) {
@@ -81,6 +106,8 @@ function SignUpContent() {
       }
     } finally {
       setIsLoading(false);
+      console.log("🔹 [회원가입 종료]");
+      /* eslint-enable no-console */
     }
   };
 
@@ -185,11 +212,21 @@ function SignUpContent() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1 block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-orange-500" />
-                  <span>인증 링크는 24시간 동안 유효합니다</span>
+                  <span>인증 링크는 24시간 동안 유효하며, 1회만 사용 가능합니다</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="mt-1 block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-orange-500" />
                   <span>인증 완료 후 자동으로 온보딩 페이지로 이동합니다</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1 block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-cyan-400" />
+                  <span>
+                    링크가 만료되었다면{" "}
+                    <Link href="/forgot-password" className="font-semibold text-cyan-400 underline">
+                      비밀번호 재설정
+                    </Link>
+                    을 이용해주세요
+                  </span>
                 </li>
               </ul>
             </motion.div>

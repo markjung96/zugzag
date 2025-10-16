@@ -228,23 +228,22 @@ export async function getUserStats(userId: string): Promise<UserStatsResponse> {
     .eq("user_id", userId)
     .not("checked_in_at", "is", null);
 
-  const timeSlotCounts = { morning: 0, afternoon: 0, evening: 0, night: 0 };
+  const timeSlotCounts = { morning: 0, afternoon: 0, evening: 0 };
   timeData?.forEach((data) => {
     const schedule = data.schedule as { phases: Array<{ start_time: string }> };
     const startTime = schedule?.phases?.[0]?.start_time;
     if (startTime) {
       const hour = parseInt(startTime.split(":")[0]);
-      if (hour >= 6 && hour < 12) timeSlotCounts.morning++;
+      if (hour >= 8 && hour < 12) timeSlotCounts.morning++;
       else if (hour >= 12 && hour < 18) timeSlotCounts.afternoon++;
-      else if (hour >= 18 && hour < 22) timeSlotCounts.evening++;
-      else timeSlotCounts.night++;
+      else if (hour >= 18 && hour <= 23) timeSlotCounts.evening++;
     }
   });
 
   const totalTimeSlots = Object.values(timeSlotCounts).reduce((a, b) => a + b, 0);
   const favoriteTimeSlot: TimeSlotStat[] = [
     {
-      timeSlot: "오전 (6-12시)",
+      timeSlot: "오전 (8-12시)",
       count: timeSlotCounts.morning,
       percentage: totalTimeSlots > 0 ? (timeSlotCounts.morning / totalTimeSlots) * 100 : 0,
     },
@@ -254,14 +253,9 @@ export async function getUserStats(userId: string): Promise<UserStatsResponse> {
       percentage: totalTimeSlots > 0 ? (timeSlotCounts.afternoon / totalTimeSlots) * 100 : 0,
     },
     {
-      timeSlot: "저녁 (18-22시)",
+      timeSlot: "저녁 (18-00시)",
       count: timeSlotCounts.evening,
       percentage: totalTimeSlots > 0 ? (timeSlotCounts.evening / totalTimeSlots) * 100 : 0,
-    },
-    {
-      timeSlot: "야간 (22-6시)",
-      count: timeSlotCounts.night,
-      percentage: totalTimeSlots > 0 ? (timeSlotCounts.night / totalTimeSlots) * 100 : 0,
     },
   ].sort((a, b) => b.count - a.count);
 

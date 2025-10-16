@@ -287,9 +287,8 @@ export default function CrewStatsPage() {
               );
               const percentage = totalCount > 0 ? (item.count / totalCount) * 100 : 0;
               const colors = [
-                "from-indigo-500 to-indigo-600",
-                "from-yellow-500 to-yellow-600",
                 "from-orange-500 to-orange-600",
+                "from-cyan-400 to-cyan-500",
                 "from-purple-500 to-purple-600",
               ];
 

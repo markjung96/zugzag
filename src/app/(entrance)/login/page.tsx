@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, Mail, Lock, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 
 import { useToast } from "@/components/toast-provider";
@@ -13,25 +13,46 @@ function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
 
-  // URL 파라미터에서 에러 확인
+  // URL 파라미터에서 에러 확인 (한 번만 표시)
   useEffect(() => {
     const error = searchParams.get("error");
     const detail = searchParams.get("detail");
 
+    if (!error) return;
+
+    // 에러 메시지 표시
     if (error === "auth_callback_failed") {
       toast.error(
         detail
           ? `인증에 실패했습니다: ${detail}`
           : "이메일 인증에 실패했습니다. Supabase 설정을 확인해주세요.",
       );
-    } else if (error) {
+    } else if (error === "otp_expired") {
+      toast.error(
+        "이메일 인증 링크가 만료되었습니다 (24시간 유효). 아래 '이메일 재인증' 링크를 이용해주세요.",
+        8000, // 8초 동안 표시
+      );
+    } else if (error === "access_denied") {
+      toast.error("이메일 인증이 취소되었습니다.");
+    } else if (error === "user_not_found") {
+      toast.error("사용자를 찾을 수 없습니다. 다시 회원가입해주세요.");
+    } else if (error === "unexpected_error") {
+      toast.error("예상치 못한 오류가 발생했습니다. 다시 시도해주세요.");
+    } else {
       toast.error(`오류가 발생했습니다: ${error}`);
     }
-  }, [searchParams, toast]);
+
+    // 에러 파라미터 제거하여 무한 루프 방지
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete("error");
+    newUrl.searchParams.delete("detail");
+    window.history.replaceState({}, "", newUrl.toString());
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]); // toast는 안정적이므로 dependency에서 제외
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,34 +60,17 @@ function LoginContent() {
 
     try {
       await signInWithEmail(email, password);
-      toast.success("로그인에 성공했습니다!");
 
-      // 프로필 확인하여 온보딩 여부 체크
-      try {
-        const response = await fetch("/api/users/me");
-        if (response.ok) {
-          const data = await response.json();
-          // climbing_level이 없으면 온보딩으로, 있으면 대시보드로
-          if (data.profile?.climbing_level) {
-            router.push("/dashboard");
-          } else {
-            router.push("/onboarding");
-          }
-        } else {
-          // 프로필을 불러오지 못하면 기본적으로 대시보드로
-          router.push("/dashboard");
-        }
-      } catch (profileError) {
-        console.error("프로필 확인 실패:", profileError);
-        // 에러 발생 시에도 대시보드로 이동 (미들웨어나 온보딩 페이지에서 다시 체크)
-        router.push("/dashboard");
-      }
+      // ✅ 하드 리프레시로 쿠키 동기화 보장
+      // Middleware에서 자동으로 적절한 페이지로 리다이렉트 (온보딩 or 대시보드)
+      const redirect = searchParams.get("redirect") || "/dashboard";
+      window.location.href = redirect;
     } catch (err) {
       console.error("로그인 실패:", err);
       toast.error("이메일 또는 비밀번호가 올바르지 않습니다.");
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // 에러 시에만 로딩 해제
     }
+    // finally 제거 - 성공 시 페이지 이동하므로 로딩 해제 불필요
   };
 
   const handleGoogleLogin = async () => {
@@ -395,20 +399,31 @@ function LoginContent() {
             </motion.div>
 
             {/* 회원가입 링크 */}
-            <motion.p
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.6 }}
-              className="mt-6 text-center text-sm text-zinc-500 md:mt-8 md:text-base"
+              className="mt-6 space-y-2 text-center text-sm text-zinc-500 md:mt-8 md:text-base"
             >
-              아직 크루원이 아니신가요?{" "}
-              <Link
-                href="/signup"
-                className="font-semibold text-cyan-400 transition-colors hover:text-cyan-300"
-              >
-                가입하기
-              </Link>
-            </motion.p>
+              <p>
+                아직 크루원이 아니신가요?{" "}
+                <Link
+                  href="/signup"
+                  className="font-semibold text-cyan-400 transition-colors hover:text-cyan-300"
+                >
+                  가입하기
+                </Link>
+              </p>
+              <p>
+                인증 링크가 만료되었나요?{" "}
+                <Link
+                  href="/resend-verification"
+                  className="font-semibold text-orange-400 transition-colors hover:text-orange-300"
+                >
+                  이메일 재인증
+                </Link>
+              </p>
+            </motion.div>
           </motion.div>
         </div>
       </div>
