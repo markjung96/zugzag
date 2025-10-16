@@ -33,14 +33,25 @@ export default function ResendVerificationPage() {
     try {
       const supabase = createClient();
 
-      // 비밀번호 재설정 이메일 발송 (이메일 인증도 함께 처리됨)
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password?verified=true`,
+      // ✅ Magic Link 방식으로 이메일 인증 재발송
+      // signInWithOtp는 이메일 미인증 사용자에게도 작동합니다
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          shouldCreateUser: false, // 이미 존재하는 사용자에게만 발송
+        },
       });
 
       if (error) {
         console.error("이메일 발송 실패:", error);
-        toast.error("이메일 발송에 실패했습니다. 다시 시도해주세요.");
+
+        // 사용자가 없는 경우
+        if (error.message?.includes("User not found") || error.message?.includes("not found")) {
+          toast.error("등록되지 않은 이메일입니다. 회원가입을 먼저 진행해주세요.");
+        } else {
+          toast.error("이메일 발송에 실패했습니다. 다시 시도해주세요.");
+        }
       } else {
         setShowSuccess(true);
       }
@@ -108,7 +119,7 @@ export default function ResendVerificationPage() {
               <p className="text-sm text-zinc-400 md:text-base">
                 메일함에서 인증 링크를 클릭하면
                 <br />
-                이메일 인증 및 비밀번호 설정이 완료됩니다.
+                자동으로 로그인되고 온보딩이 시작됩니다.
               </p>
             </motion.div>
 
@@ -310,7 +321,7 @@ export default function ResendVerificationPage() {
                   <p className="mb-2 font-semibold text-cyan-400">이메일 인증 링크 만료</p>
                   <p>
                     인증 링크는 24시간 동안만 유효합니다. 링크가 만료되었거나 이미 사용한 경우,
-                    비밀번호 재설정을 통해 새로운 인증 링크를 받을 수 있습니다.
+                    아래에서 새로운 인증 링크를 받을 수 있습니다.
                   </p>
                 </div>
               </div>
