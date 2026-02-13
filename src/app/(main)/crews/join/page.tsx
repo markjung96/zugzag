@@ -1,5 +1,6 @@
 'use client'
 
+import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { useState, useCallback } from 'react'
 import { ArrowLeft, UserPlus, Ticket } from 'lucide-react'
@@ -27,6 +28,7 @@ export default function JoinCrewPage() {
 
       mutation.mutate(code, {
         onSuccess: (crew) => {
+          toast.success('크루에 가입되었습니다')
           router.push(`/crews/${crew.id}`)
         },
       })

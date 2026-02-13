@@ -8,7 +8,9 @@ import {
   Users,
   Check,
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useSchedulesQuery } from '@/hooks/api/schedules/use-schedules-query'
 
 type Schedule = {
@@ -32,6 +34,59 @@ function formatTime(timeStr: string): string {
   const ampm = hour >= 12 ? '오후' : '오전'
   const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour
   return `${ampm} ${displayHour}:${minutes}`
+}
+
+function LoadingState() {
+  return (
+    <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
+      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
+        <div className="flex h-14 items-center gap-2 px-4">
+          <Skeleton className="h-5 w-5 rounded" />
+          <Skeleton className="h-5 w-16 rounded-lg" />
+        </div>
+      </header>
+      <div className="flex flex-1 flex-col gap-6 px-4 py-5">
+        <div className="flex justify-center py-16">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
+            <p className="text-sm font-medium text-muted-foreground">일정을 불러오는 중...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ErrorState({ error }: { error: Error }) {
+  return (
+    <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
+      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
+        <div className="flex h-14 items-center gap-2 px-4">
+          <Calendar className="h-5 w-5 text-primary" />
+          <h1 className="text-lg font-bold">내 일정</h1>
+        </div>
+      </header>
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
+        <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-destructive/10">
+          <svg className="h-12 w-12 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+        </div>
+        <div className="text-center">
+          <h3 className="mb-2 text-lg font-bold text-destructive">일정을 불러올 수 없습니다</h3>
+          <p className="text-sm text-muted-foreground">{error.message}</p>
+        </div>
+        <Button onClick={() => window.location.reload()} className="rounded-xl px-5">
+          다시 시도
+        </Button>
+      </div>
+    </div>
+  )
 }
 
 export default function SchedulesPage() {
@@ -158,61 +213,17 @@ function EmptyState() {
         <Calendar className="h-10 w-10 text-primary" />
       </div>
       <h3 className="mb-2 text-xl font-bold">예정된 일정이 없어요</h3>
-      <p className="text-center text-sm leading-relaxed text-muted-foreground">
+      <p className="mb-8 text-center text-sm leading-relaxed text-muted-foreground">
         가입한 크루의 일정이
         <br />
         여기에 표시됩니다
       </p>
-    </div>
-  )
-}
-
-function LoadingState() {
-  return (
-    <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
-        <div className="flex h-14 items-center gap-2 px-4">
-          <div className="h-5 w-5 animate-pulse rounded bg-muted" />
-          <div className="h-5 w-16 animate-pulse rounded-lg bg-muted" />
-        </div>
-      </header>
-      <div className="flex flex-1 flex-col gap-6 px-4 py-5">
-        <div className="flex justify-center py-16">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
-            <p className="text-sm font-medium text-muted-foreground">일정을 불러오는 중...</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function ErrorState({ error }: { error: Error }) {
-  return (
-    <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
-        <div className="flex h-14 items-center gap-2 px-4">
-          <Calendar className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-bold">내 일정</h1>
-        </div>
-      </header>
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
-        <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-destructive/10">
-          <svg className="h-12 w-12 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
-        </div>
-        <div className="text-center">
-          <h3 className="mb-2 text-lg font-bold text-destructive">일정을 불러올 수 없습니다</h3>
-          <p className="text-sm text-muted-foreground">{error.message}</p>
-        </div>
-      </div>
+      <Link href="/crews">
+        <Button variant="outline" className="h-12 rounded-xl border-2 px-6 text-base font-medium transition-all hover:border-primary hover:bg-primary/5">
+          <Users className="mr-2 h-5 w-5" />
+          크루 목록 보기
+        </Button>
+      </Link>
     </div>
   )
 }

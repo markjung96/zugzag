@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { BarChart3, Calendar, ChevronRight } from 'lucide-react'
+import { LoadingState } from '@/components/organisms/common/loading-state'
 import { useAttendanceQuery } from '@/hooks/api/users/use-attendance-query'
 import { useSchedulesQuery } from '@/hooks/api/schedules/use-schedules-query'
 import type { ScheduleListItem } from '@/types/schedule.types'
@@ -15,14 +16,14 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-background">
+      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="flex h-14 items-center px-4">
           <BarChart3 className="mr-2 h-5 w-5" />
           <h1 className="text-lg font-bold">내 통계</h1>
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-6 px-4 py-6">
+      <div className="flex flex-1 flex-col gap-6 px-4 py-5">
         <section>
           <h2 className="mb-3 text-sm font-semibold text-muted-foreground">
             내 출석률
@@ -63,15 +64,15 @@ export default function DashboardPage() {
             크루별 출석률
           </h2>
           {loadingAttendance ? (
-            <div className="flex h-24 items-center justify-center rounded-2xl border border-border bg-card">
-              <p className="text-sm text-muted-foreground">로딩 중...</p>
+            <div className="rounded-2xl border border-border bg-card">
+              <LoadingState message="출석 정보를 불러오는 중..." />
             </div>
           ) : !attendance?.crewStats || attendance.crewStats.length === 0 ? (
-            <div className="flex h-24 items-center justify-center rounded-2xl border border-border bg-card">
+            <Link href="/crews" className="flex h-24 items-center justify-center rounded-2xl border border-border bg-card transition-all hover:border-primary/50 hover:shadow-md">
               <p className="text-sm text-muted-foreground">
-                소속된 크루가 없습니다
+                소속된 크루가 없습니다 · <span className="font-medium text-primary">크루 둘러보기</span>
               </p>
-            </div>
+            </Link>
           ) : (
             <div className="space-y-3">
               {attendance.crewStats.map((crew) => (
@@ -95,15 +96,15 @@ export default function DashboardPage() {
             </Link>
           </div>
           {loadingSchedules ? (
-            <div className="flex h-24 items-center justify-center rounded-2xl border border-border bg-card">
-              <p className="text-sm text-muted-foreground">로딩 중...</p>
+            <div className="rounded-2xl border border-border bg-card">
+              <LoadingState message="일정을 불러오는 중..." />
             </div>
           ) : !schedulesData?.schedules || schedulesData.schedules.length === 0 ? (
-            <div className="flex h-24 items-center justify-center rounded-2xl border border-border bg-card">
+            <Link href="/schedules" className="flex h-24 items-center justify-center rounded-2xl border border-border bg-card transition-all hover:border-primary/50 hover:shadow-md">
               <p className="text-sm text-muted-foreground">
-                예정된 일정이 없습니다
+                예정된 일정이 없습니다 · <span className="font-medium text-primary">일정 보기</span>
               </p>
-            </div>
+            </Link>
           ) : (
             <div className="space-y-3">
               {schedulesData.schedules.map((schedule) => (
@@ -152,7 +153,7 @@ function ScheduleCard({ schedule }: { schedule: ScheduleListItem }) {
   return (
     <Link
       href={`/crews/${schedule.crewId}/schedules/${schedule.id}`}
-      className="block rounded-2xl border border-border bg-card p-4 transition-colors active:bg-accent"
+      className="block rounded-2xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 active:scale-[0.98]"
     >
       <div className="mb-1 flex items-start justify-between">
         <div className="flex items-center gap-2">
@@ -163,8 +164,8 @@ function ScheduleCard({ schedule }: { schedule: ScheduleListItem }) {
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-medium ${
               schedule.myStatus === 'attending'
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                ? 'bg-success/10 text-success'
+                : 'bg-warning/10 text-warning'
             }`}
           >
             {schedule.myStatus === 'attending' ? '참석 예정' : '대기 중'}

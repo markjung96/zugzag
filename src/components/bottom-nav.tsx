@@ -55,11 +55,11 @@ export function BottomNav() {
     <>
       {showAddMenu && (
         <div
-          className="fixed inset-0 z-50 bg-black/50"
+          className="fixed inset-0 z-50 bg-black/50 animate-in fade-in duration-200"
           onClick={handleMenuClose}
         >
           <div
-            className="absolute bottom-20 left-1/2 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 overflow-hidden rounded-2xl bg-card shadow-lg"
+            className="absolute bottom-20 left-1/2 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 overflow-hidden rounded-2xl bg-card shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-border p-4">
@@ -67,6 +67,7 @@ export function BottomNav() {
               <button
                 onClick={handleMenuClose}
                 className="rounded-full p-1 transition-colors hover:bg-accent"
+                aria-label="닫기"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -124,7 +125,7 @@ export function BottomNav() {
                 )}
               >
                 <Icon className="h-5 w-5" />
-                <span className="text-[11px] font-medium">{item.label}</span>
+                <span className="text-xs font-medium">{item.label}</span>
               </Link>
             )
           })}
@@ -132,6 +133,9 @@ export function BottomNav() {
           <button
             onClick={handleAddClick}
             className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95"
+            aria-label="추가하기"
+            aria-haspopup="dialog"
+            aria-expanded={showAddMenu}
           >
             <Plus className="h-6 w-6" />
           </button>
@@ -153,7 +157,7 @@ export function BottomNav() {
                 )}
               >
                 <Icon className="h-5 w-5" />
-                <span className="text-[11px] font-medium">{item.label}</span>
+                <span className="text-xs font-medium">{item.label}</span>
               </Link>
             )
           })}

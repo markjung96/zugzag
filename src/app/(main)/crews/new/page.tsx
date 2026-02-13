@@ -1,5 +1,6 @@
 'use client'
 
+import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { useState, useCallback } from 'react'
 import { ArrowLeft, Users } from 'lucide-react'
@@ -33,6 +34,7 @@ export default function NewCrewPage() {
         },
         {
           onSuccess: (crew) => {
+            toast.success('크루가 생성되었습니다')
             router.push(`/crews/${crew.id}`)
           },
         }

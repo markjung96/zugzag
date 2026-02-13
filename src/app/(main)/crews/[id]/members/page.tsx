@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useState, useCallback } from 'react'
@@ -15,6 +16,7 @@ import {
   ShieldOff,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,12 +38,13 @@ import { useCrewQuery } from '@/hooks/api/crews/use-crew-query'
 import { useCrewMembersQuery } from '@/hooks/api/crews/use-crew-members-query'
 import { useUpdateMemberMutation } from '@/hooks/api/crews/use-update-member-mutation'
 import { useRemoveMemberMutation } from '@/hooks/api/crews/use-remove-member-mutation'
+import { toast } from 'sonner'
 import type { CrewMember } from '@/types/crew.types'
 
 type Role = 'leader' | 'admin' | 'member'
 
 const ROLE_CONFIG: Record<Role, { label: string; icon: typeof Crown; color: string }> = {
-  leader: { label: '크루장', icon: Crown, color: 'text-amber-500' },
+  leader: { label: '크루장', icon: Crown, color: 'text-warning' },
   admin: { label: '운영진', icon: Shield, color: 'text-primary' },
   member: { label: '멤버', icon: User, color: 'text-muted-foreground' },
 }
@@ -64,7 +67,10 @@ export default function CrewMembersPage() {
   const handleKick = useCallback(() => {
     if (kickTarget) {
       removeMemberMutation.mutate(kickTarget.id, {
-        onSuccess: () => setKickTarget(null),
+        onSuccess: () => {
+          setKickTarget(null)
+          toast.success('멤버가 크루에서 제거되었습니다')
+        },
       })
     }
   }, [kickTarget, removeMemberMutation])
@@ -107,7 +113,7 @@ export default function CrewMembersPage() {
 
       <div className="flex flex-1 flex-col px-4 py-5">
         <div className="mb-4 flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+          <div className="flex items-center gap-1.5 rounded-full bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning">
             <Crown className="h-3 w-3" />
             크루장 1
           </div>
@@ -184,7 +190,7 @@ function MemberCard({
       <div className="flex items-center gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted text-lg font-bold text-muted-foreground">
           {member.image ? (
-            <img src={member.image} alt={member.name} className="h-full w-full rounded-full object-cover" />
+            <Image src={member.image} alt={member.name} width={44} height={44} className="h-full w-full rounded-full object-cover" />
           ) : (
             member.name.charAt(0).toUpperCase()
           )}
@@ -237,18 +243,18 @@ function LoadingState() {
     <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="flex h-14 items-center gap-3 px-4">
-          <div className="h-10 w-10 animate-pulse rounded-xl bg-muted" />
-          <div className="h-5 w-24 animate-pulse rounded-lg bg-muted" />
+          <Skeleton className="h-10 w-10 rounded-xl" />
+          <Skeleton className="h-5 w-24 rounded-lg" />
         </div>
       </header>
       <div className="flex flex-1 flex-col gap-4 px-4 py-5">
         <div className="flex gap-2">
-          <div className="h-7 w-20 animate-pulse rounded-full bg-muted" />
-          <div className="h-7 w-20 animate-pulse rounded-full bg-muted" />
-          <div className="h-7 w-20 animate-pulse rounded-full bg-muted" />
+          <Skeleton className="h-7 w-20 rounded-full" />
+          <Skeleton className="h-7 w-20 rounded-full" />
+          <Skeleton className="h-7 w-20 rounded-full" />
         </div>
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-20 animate-pulse rounded-xl bg-muted" />
+          <Skeleton key={i} className="h-20 rounded-xl" />
         ))}
       </div>
     </div>

@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
 import { useTheme } from 'next-themes'
 import {
@@ -42,9 +43,11 @@ export default function ProfilePage() {
           <div className="flex flex-col items-center px-5 py-6">
             <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 ring-4 ring-background">
               {session?.user?.image ? (
-                <img
+                <Image
                   src={session.user.image}
                   alt="프로필"
+                  width={96}
+                  height={96}
                   className="h-24 w-24 rounded-full object-cover"
                 />
               ) : (
@@ -74,7 +77,7 @@ export default function ProfilePage() {
             value={Math.round((stats?.attendanceRate ?? 0) * 100)}
             suffix="%"
             icon={<CalendarCheck className="h-5 w-5" />}
-            color="bg-amber-500/10 text-amber-500"
+            color="bg-warning/10 text-warning"
           />
         </div>
 

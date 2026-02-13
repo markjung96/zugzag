@@ -1,18 +1,18 @@
-import { Skeleton } from '@/components/ui/skeleton'
-
 interface LoadingStateProps {
-  count?: number
+  message?: string
+  fullHeight?: boolean
 }
 
-export function LoadingState({ count = 3 }: LoadingStateProps) {
+export function LoadingState({
+  message = '불러오는 중...',
+  fullHeight = false
+}: LoadingStateProps) {
   return (
-    <div className="space-y-4">
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="p-4 border rounded-lg">
-          <Skeleton className="h-5 w-1/3 mb-2" />
-          <Skeleton className="h-4 w-2/3" />
-        </div>
-      ))}
+    <div className={`flex flex-1 items-center justify-center ${fullHeight ? 'min-h-[calc(100vh-5rem)]' : 'py-16'}`}>
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
+        <p className="text-sm font-medium text-muted-foreground">{message}</p>
+      </div>
     </div>
   )
 }

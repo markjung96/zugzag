@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -21,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +41,7 @@ import { useDeleteCrewMutation } from '@/hooks/api/crews/use-delete-crew-mutatio
 import { useRemoveMemberMutation } from '@/hooks/api/crews/use-remove-member-mutation'
 import { useRegenerateInviteCodeMutation } from '@/hooks/api/crews/use-regenerate-invite-code-mutation'
 import { useClipboard } from '@/hooks/common/use-clipboard'
+import { toast } from 'sonner'
 import type { CrewMember } from '@/types/crew.types'
 
 export default function CrewSettingsPage() {
@@ -105,14 +108,20 @@ export default function CrewSettingsPage() {
         description: formData.description.trim() || undefined,
       },
       {
-        onSuccess: () => setIsEditing(false),
+        onSuccess: () => {
+          setIsEditing(false)
+          toast.success('크루 정보가 저장되었습니다')
+        },
       }
     )
   }
 
   const handleDelete = () => {
     deleteMutation.mutate(crewId, {
-      onSuccess: () => router.push('/crews'),
+      onSuccess: () => {
+        toast.success('크루가 삭제되었습니다')
+        router.push('/crews')
+      },
     })
   }
 
@@ -190,7 +199,9 @@ export default function CrewSettingsPage() {
                         <AlertDialogFooter>
                           <AlertDialogCancel className="rounded-xl">취소</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => regenerateCodeMutation.mutate(undefined)}
+                            onClick={() => regenerateCodeMutation.mutate(undefined, {
+                              onSuccess: () => toast.success('초대 코드가 재생성되었습니다'),
+                            })}
                             className="rounded-xl"
                           >
                             재생성
@@ -360,7 +371,7 @@ function MemberItem({
     <div className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-md hover:shadow-primary/5">
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-sm font-bold text-primary">
         {member.image ? (
-          <img src={member.image} alt={member.name} className="h-12 w-12 rounded-full object-cover" />
+          <Image src={member.image} alt={member.name} width={48} height={48} className="h-12 w-12 rounded-full object-cover" />
         ) : (
           member.name.charAt(0).toUpperCase()
         )}
@@ -422,8 +433,8 @@ function LoadingState({ crewId }: { crewId: string }) {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div className="ml-2 flex items-center gap-2">
-            <div className="h-5 w-5 animate-pulse rounded bg-muted" />
-            <div className="h-5 w-20 animate-pulse rounded-lg bg-muted" />
+            <Skeleton className="h-5 w-5 rounded" />
+            <Skeleton className="h-5 w-20 rounded-lg" />
           </div>
         </div>
       </header>

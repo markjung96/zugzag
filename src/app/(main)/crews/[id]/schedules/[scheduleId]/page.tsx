@@ -24,6 +24,7 @@ import {
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +43,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 type RoundType = "exercise" | "meal" | "afterparty" | "other"
 
@@ -174,6 +176,9 @@ export default function ScheduleDetailPage() {
         queryClient.setQueryData(["schedule", scheduleId], context.previousData)
       }
     },
+    onSuccess: () => {
+      toast.success('참석이 등록되었습니다')
+    },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["schedule", scheduleId] })
       queryClient.invalidateQueries({ queryKey: ["schedules"] })
@@ -214,6 +219,9 @@ export default function ScheduleDetailPage() {
         queryClient.setQueryData(["schedule", scheduleId], context.previousData)
       }
     },
+    onSuccess: () => {
+      toast.success('참석이 취소되었습니다')
+    },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["schedule", scheduleId] })
       queryClient.invalidateQueries({ queryKey: ["schedules"] })
@@ -224,6 +232,7 @@ export default function ScheduleDetailPage() {
   const deleteMutation = useMutation({
     mutationFn: () => deleteSchedule(scheduleId),
     onSuccess: () => {
+      toast.success('일정이 삭제되었습니다')
       queryClient.invalidateQueries({ queryKey: ["schedules"] })
       queryClient.invalidateQueries({ queryKey: ["crew-schedules", crewId] })
       router.push(`/crews/${crewId}`)
@@ -252,12 +261,12 @@ export default function ScheduleDetailPage() {
 
   return (
     <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-background">
+      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <Link
               href={`/crews/${crewId}`}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               aria-label="뒤로 가기"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -271,7 +280,7 @@ export default function ScheduleDetailPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 rounded-xl"
+                    className="h-10 w-10 rounded-xl"
                   >
                     <MoreVertical className="h-5 w-5" />
                   </Button>
@@ -313,7 +322,7 @@ export default function ScheduleDetailPage() {
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col px-4 py-4">
+      <div className="flex flex-1 flex-col px-4 py-5">
         <div className="rounded-2xl border border-border bg-card p-4">
           <div className="mb-4 flex items-center justify-between">
             <span className="rounded-lg bg-primary px-3 py-1 text-sm font-semibold text-primary-foreground">
@@ -570,20 +579,20 @@ function formatTime(timeStr: string): string {
 function LoadingState({ crewId }: { crewId: string }) {
   return (
     <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-background">
+      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="flex h-14 items-center px-4">
           <Link
             href={`/crews/${crewId}`}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <div className="ml-2 h-5 w-20 animate-pulse rounded-lg bg-muted" />
+          <Skeleton className="ml-2 h-5 w-20 rounded-lg" />
         </div>
       </header>
       <div className="flex flex-1 items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-3 border-primary border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
           <p className="text-sm text-muted-foreground">불러오는 중...</p>
         </div>
       </div>
@@ -594,11 +603,11 @@ function LoadingState({ crewId }: { crewId: string }) {
 function ErrorState({ crewId }: { crewId: string }) {
   return (
     <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-background">
+      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="flex h-14 items-center gap-2 px-4">
           <Link
             href={`/crews/${crewId}`}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>

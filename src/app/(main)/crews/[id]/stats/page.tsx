@@ -1,11 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, BarChart3, Users, Calendar, TrendingUp, Crown, Shield, User } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Role = "leader" | "admin" | "member";
 
@@ -42,7 +44,7 @@ const PERIOD_OPTIONS = [
 ];
 
 const ROLE_CONFIG: Record<Role, { label: string; icon: typeof Crown; color: string }> = {
-  leader: { label: "크루장", icon: Crown, color: "text-amber-500" },
+  leader: { label: "크루장", icon: Crown, color: "text-warning" },
   admin: { label: "운영진", icon: Shield, color: "text-primary" },
   member: { label: "멤버", icon: User, color: "text-muted-foreground" },
 };
@@ -145,7 +147,7 @@ export default function CrewStatsPage() {
                 label="평균 출석률"
                 value={Math.round(stats.averageAttendanceRate * 100)}
                 unit="%"
-                color="bg-amber-500/10 text-amber-500"
+                color="bg-warning/10 text-warning"
               />
             </div>
 
@@ -214,9 +216,9 @@ function MemberStatCard({ member, rank }: { member: MemberStat; rank: number }) 
   const percentage = Math.round(member.rate * 100);
 
   const getRankBadge = () => {
-    if (rank === 1) return "bg-gradient-to-br from-amber-400 to-amber-600 text-white shadow-sm shadow-amber-500/30";
-    if (rank === 2) return "bg-gradient-to-br from-slate-300 to-slate-500 text-white shadow-sm shadow-slate-400/30";
-    if (rank === 3) return "bg-gradient-to-br from-amber-600 to-amber-800 text-white shadow-sm shadow-amber-700/30";
+    if (rank === 1) return "bg-gradient-to-br from-warning to-warning/70 text-warning-foreground shadow-sm shadow-warning/30";
+    if (rank === 2) return "bg-gradient-to-br from-muted-foreground/50 to-muted-foreground/80 text-white shadow-sm shadow-muted-foreground/30";
+    if (rank === 3) return "bg-gradient-to-br from-warning/70 to-warning/50 text-warning-foreground shadow-sm shadow-warning/30";
     return "bg-muted text-muted-foreground";
   };
 
@@ -231,7 +233,7 @@ function MemberStatCard({ member, rank }: { member: MemberStat; rank: number }) 
           </div>
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-muted to-muted/50 text-sm font-bold text-muted-foreground">
             {member.image ? (
-              <img src={member.image} alt={member.name} className="h-full w-full rounded-full object-cover" />
+              <Image src={member.image} alt={member.name} width={44} height={44} className="h-full w-full rounded-full object-cover" />
             ) : (
               member.name.charAt(0).toUpperCase()
             )}
@@ -246,7 +248,7 @@ function MemberStatCard({ member, rank }: { member: MemberStat; rank: number }) 
             </p>
           </div>
         </div>
-        <span className={`text-xl font-bold ${percentage >= 80 ? "text-success" : percentage >= 50 ? "text-amber-500" : "text-destructive"}`}>
+        <span className={`text-xl font-bold ${percentage >= 80 ? "text-success" : percentage >= 50 ? "text-warning" : "text-destructive"}`}>
           {percentage}%
         </span>
       </div>
@@ -260,17 +262,17 @@ function LoadingState() {
     <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="flex h-14 items-center gap-3 px-4">
-          <div className="h-10 w-10 animate-pulse rounded-xl bg-muted" />
+          <Skeleton className="h-10 w-10 rounded-xl" />
           <div className="flex items-center gap-2">
-            <div className="h-5 w-5 animate-pulse rounded bg-muted" />
-            <div className="h-5 w-20 animate-pulse rounded-lg bg-muted" />
+            <Skeleton className="h-5 w-5 rounded" />
+            <Skeleton className="h-5 w-20 rounded-lg" />
           </div>
         </div>
       </header>
       <div className="flex flex-1 flex-col gap-6 px-4 py-5">
         <div className="flex justify-between">
-          <div className="h-5 w-32 animate-pulse rounded-lg bg-muted" />
-          <div className="h-10 w-28 animate-pulse rounded-xl bg-muted" />
+          <Skeleton className="h-5 w-32 rounded-lg" />
+          <Skeleton className="h-10 w-28 rounded-xl" />
         </div>
         <StatsLoadingState />
       </div>
@@ -283,16 +285,16 @@ function StatsLoadingState() {
     <>
       <div className="grid grid-cols-3 gap-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-28 animate-pulse rounded-2xl bg-muted" />
+          <Skeleton key={i} className="h-28 rounded-2xl" />
         ))}
       </div>
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <div className="h-5 w-5 animate-pulse rounded bg-muted" />
-          <div className="h-5 w-28 animate-pulse rounded-lg bg-muted" />
+          <Skeleton className="h-5 w-5 rounded" />
+          <Skeleton className="h-5 w-28 rounded-lg" />
         </div>
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-24 animate-pulse rounded-2xl bg-muted" />
+          <Skeleton key={i} className="h-24 rounded-2xl" />
         ))}
       </div>
     </>
