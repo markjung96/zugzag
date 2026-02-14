@@ -1,1 +1,0 @@
-{"version":"7","dialect":"postgresql","entries":[{"idx":0,"version":"7","when":1769933683892,"tag":"0000_strong_monster_badoon","breakpoints":true},{"idx":1,"version":"7","when":1738425600000,"tag":"0001_add_schedule_rounds","breakpoints":true},{"idx":2,"version":"7","when":1739462400000,"tag":"0002_add_constraints_and_indexes","breakpoints":true}]}
