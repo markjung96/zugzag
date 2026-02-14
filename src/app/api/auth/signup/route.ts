@@ -1,20 +1,37 @@
 import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
 import { db } from "@/lib/db"
 import { users } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcrypt"
 
+const SignupSchema = z.object({
+  email: z.string().email("올바른 이메일 형식이 아닙니다"),
+  password: z.string().min(8, "비밀번호는 최소 8자 이상이어야 합니다"),
+  name: z.string().min(1, "이름을 입력해주세요").max(50, "이름은 50자 이하여야 합니다"),
+  agreedToTerms: z.literal(true, {
+    errorMap: () => ({ message: "이용약관에 동의해주세요" }),
+  }),
+  agreedToPrivacy: z.literal(true, {
+    errorMap: () => ({ message: "개인정보 처리방침에 동의해주세요" }),
+  }),
+})
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, password, name } = body
+    const parsed = SignupSchema.safeParse(body)
 
-    if (!email || !password || !name) {
+    if (!parsed.success) {
+      const firstError = parsed.error.issues[0]
+      const message = firstError?.message ?? "입력값이 올바르지 않습니다"
       return NextResponse.json(
-        { error: "이메일, 비밀번호, 이름은 필수입니다", code: "BAD_REQUEST" },
+        { error: message, code: "BAD_REQUEST" },
         { status: 400 }
       )
     }
+
+    const { email, password, name, agreedToTerms, agreedToPrivacy } = parsed.data
 
     // 이메일 중복 확인
     const existingUser = await db
@@ -34,6 +51,7 @@ export async function POST(request: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 10)
 
     // 사용자 생성
+    const agreedAt = new Date()
     const newUser = await db
       .insert(users)
       .values({
@@ -41,6 +59,9 @@ export async function POST(request: NextRequest) {
         name,
         passwordHash,
         provider: "credentials",
+        agreedToTerms,
+        agreedToPrivacy,
+        agreedAt,
       })
       .returning()
 

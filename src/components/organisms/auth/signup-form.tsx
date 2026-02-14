@@ -1,18 +1,22 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Mail, Lock, User, Eye, EyeOff, Check, X } from 'lucide-react'
+import Link from 'next/link'
+import { Mail, Lock, User, Eye, EyeOff, Check, X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { signIn } from 'next-auth/react'
+import { getErrorMessage } from '@/lib/utils/get-error-message'
 
 interface SignupFormProps {
   redirectUrl?: string
+  onLoadingChange?: (loading: boolean) => void
 }
 
-export function SignupForm({ redirectUrl = '/crews' }: SignupFormProps) {
+export function SignupForm({ redirectUrl = '/crews', onLoadingChange }: SignupFormProps) {
   const router = useRouter()
 
   const [showPassword, setShowPassword] = useState(false)
@@ -25,6 +29,8 @@ export function SignupForm({ redirectUrl = '/crews' }: SignupFormProps) {
     confirmPassword: '',
     nickname: '',
   })
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [agreedToPrivacy, setAgreedToPrivacy] = useState(false)
 
   const passwordsMatch =
     formData.password.length > 0 &&
@@ -38,7 +44,7 @@ export function SignupForm({ redirectUrl = '/crews' }: SignupFormProps) {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
-      if (!passwordsMatch) return
+      if (!passwordsMatch || !agreedToTerms || !agreedToPrivacy) return
 
       setIsLoading(true)
       setError('')
@@ -51,6 +57,8 @@ export function SignupForm({ redirectUrl = '/crews' }: SignupFormProps) {
             email: formData.email,
             password: formData.password,
             name: formData.nickname,
+            agreedToTerms: true,
+            agreedToPrivacy: true,
           }),
         })
 
@@ -75,13 +83,13 @@ export function SignupForm({ redirectUrl = '/crews' }: SignupFormProps) {
         }
 
         router.push(redirectUrl)
-      } catch (error) {
-        console.error('Signup error:', error)
-        setError('회원가입 중 오류가 발생했습니다')
+      } catch (err) {
+        console.error('Signup error:', err)
+        setError(getErrorMessage(err))
         setIsLoading(false)
       }
     },
-    [formData, passwordsMatch, router, redirectUrl]
+    [formData, passwordsMatch, agreedToTerms, agreedToPrivacy, router, redirectUrl]
   )
 
   const togglePassword = useCallback(() => {
@@ -92,11 +100,15 @@ export function SignupForm({ redirectUrl = '/crews' }: SignupFormProps) {
     setShowConfirmPassword((prev) => !prev)
   }, [])
 
+  useEffect(() => {
+    onLoadingChange?.(isLoading)
+  }, [isLoading, onLoadingChange])
+
   return (
     <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
-          <div className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive">
+          <div role="alert" className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive">
             {error}
           </div>
         )}
@@ -112,6 +124,7 @@ export function SignupForm({ redirectUrl = '/crews' }: SignupFormProps) {
               type="email"
               placeholder="example@email.com"
               value={formData.email}
+              autoFocus
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, email: e.target.value }))
               }
@@ -134,7 +147,7 @@ export function SignupForm({ redirectUrl = '/crews' }: SignupFormProps) {
             <Input
               id="password"
               type={showPassword ? 'text' : 'password'}
-              placeholder="8자 이상 영문, 숫자 포함"
+              placeholder="8자 이상"
               value={formData.password}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, password: e.target.value }))
@@ -148,7 +161,7 @@ export function SignupForm({ redirectUrl = '/crews' }: SignupFormProps) {
             <button
               type="button"
               onClick={togglePassword}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground transition-colors hover:text-foreground"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground"
               aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
               disabled={isLoading}
             >
@@ -189,7 +202,7 @@ export function SignupForm({ redirectUrl = '/crews' }: SignupFormProps) {
             <button
               type="button"
               onClick={toggleConfirmPassword}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground transition-colors hover:text-foreground"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground"
               aria-label={
                 showConfirmPassword ? '비밀번호 숨기기' : '비밀번호 보기'
               }
@@ -246,12 +259,72 @@ export function SignupForm({ redirectUrl = '/crews' }: SignupFormProps) {
           <p className="text-sm text-muted-foreground">2-10자</p>
         </div>
 
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="terms"
+              checked={agreedToTerms}
+              onCheckedChange={(checked) =>
+                setAgreedToTerms(checked === true)
+              }
+              disabled={isLoading}
+              className="mt-0.5"
+            />
+            <Label
+              htmlFor="terms"
+              className="cursor-pointer text-sm leading-relaxed text-muted-foreground"
+            >
+              [필수]{' '}
+              <Link
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary underline underline-offset-4 hover:text-primary/80"
+              >
+                이용약관
+              </Link>
+              에 동의합니다
+            </Label>
+          </div>
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="privacy"
+              checked={agreedToPrivacy}
+              onCheckedChange={(checked) =>
+                setAgreedToPrivacy(checked === true)
+              }
+              disabled={isLoading}
+              className="mt-0.5"
+            />
+            <Label
+              htmlFor="privacy"
+              className="cursor-pointer text-sm leading-relaxed text-muted-foreground"
+            >
+              [필수]{' '}
+              <Link
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary underline underline-offset-4 hover:text-primary/80"
+              >
+                개인정보 처리방침
+              </Link>
+              에 동의합니다
+            </Label>
+          </div>
+        </div>
+
         <Button
           type="submit"
           className="h-12 w-full rounded-xl text-base font-semibold shadow-md transition-shadow hover:shadow-lg"
-          disabled={isLoading || !passwordsMatch}
+          disabled={
+            isLoading ||
+            !passwordsMatch ||
+            !agreedToTerms ||
+            !agreedToPrivacy
+          }
         >
-          {isLoading ? '가입 중...' : '회원가입'}
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}회원가입
         </Button>
       </form>
     </div>

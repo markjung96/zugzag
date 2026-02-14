@@ -1,4 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { getErrorMessage } from '@/lib/utils/get-error-message'
 
 interface SignupData {
   name: string
@@ -19,10 +21,17 @@ export function useSignupMutation() {
         body: JSON.stringify(data),
       })
       if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.error || '회원가입에 실패했습니다')
+        const errData = await res.json().catch(() => ({}))
+        const err = new Error(
+          (errData as { error?: string })?.error || '회원가입에 실패했습니다'
+        ) as Error & { code?: string }
+        err.code = (errData as { code?: string })?.code
+        throw err
       }
       return res.json()
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error), { duration: 4000 })
     },
   })
 }

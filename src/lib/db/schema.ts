@@ -27,6 +27,9 @@ export const users = pgTable("users", {
   image: varchar("image", { length: 500 }),
   provider: varchar("provider", { length: 50 }), // google, kakao, credentials
   providerAccountId: varchar("provider_account_id", { length: 255 }),
+  agreedToTerms: boolean("agreed_to_terms").default(false).notNull(),
+  agreedToPrivacy: boolean("agreed_to_privacy").default(false).notNull(),
+  agreedAt: timestamp("agreed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
