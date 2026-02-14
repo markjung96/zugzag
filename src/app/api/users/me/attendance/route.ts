@@ -40,8 +40,10 @@ export async function GET(request: NextRequest) {
 
     if (myCrews.length === 0) {
       return NextResponse.json({
-        overall: { attended: 0, total: 0, rate: 0 },
-        byCrews: [],
+        totalSchedules: 0,
+        attendedSchedules: 0,
+        attendanceRate: 0,
+        crewStats: [],
       });
     }
 
@@ -85,30 +87,28 @@ export async function GET(request: NextRequest) {
 
           const total = totalExerciseRounds[0]?.count ?? 0;
           const attended = attendedRounds[0]?.count ?? 0;
-          const rate = total > 0 ? Math.round((attended / total) * 100) / 100 : 0;
+          const attendanceRate = total > 0 ? Math.round((attended / total) * 100) / 100 : 0;
 
           return {
             crewId: crew.crewId,
             crewName: crew.crewName,
             attended,
             total,
-            rate,
+            attendanceRate,
           };
         }),
     );
 
     // 전체 통계
-    const overallAttended = byCrews.reduce((sum, c) => sum + c.attended, 0);
-    const overallTotal = byCrews.reduce((sum, c) => sum + c.total, 0);
-    const overallRate = overallTotal > 0 ? Math.round((overallAttended / overallTotal) * 100) / 100 : 0;
+    const attendedSchedules = byCrews.reduce((sum, c) => sum + c.attended, 0);
+    const totalSchedules = byCrews.reduce((sum, c) => sum + c.total, 0);
+    const attendanceRate = totalSchedules > 0 ? Math.round((attendedSchedules / totalSchedules) * 100) / 100 : 0;
 
     return NextResponse.json({
-      overall: {
-        attended: overallAttended,
-        total: overallTotal,
-        rate: overallRate,
-      },
-      byCrews,
+      totalSchedules,
+      attendedSchedules,
+      attendanceRate,
+      crewStats: byCrews,
     });
   } catch (error) {
     return handleError(error);

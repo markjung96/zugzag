@@ -12,5 +12,7 @@ export function useCrewMembersQuery(crewId: string) {
       return res.json()
     },
     enabled: !!crewId,
+    staleTime: 300_000,
+    gcTime: 900_000,
   })
 }

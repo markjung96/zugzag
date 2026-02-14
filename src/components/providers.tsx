@@ -1,20 +1,40 @@
 "use client"
 
 import { useState } from "react"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { SessionProvider } from "next-auth/react"
+import { MutationCache, QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { SessionProvider, signOut } from "next-auth/react"
 import { ThemeProvider } from "next-themes"
 import { AppProgressBar } from "next-nprogress-bar"
+import { toast } from "sonner"
 import { Toaster } from "@/components/ui/sonner"
+import { getErrorMessage } from "@/lib/utils/get-error-message"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
+        mutationCache: new MutationCache({
+          onError: (error) => {
+            // 401 Unauthorized → auto signout
+            const errWithCode = error as Error & { code?: string }
+            if (errWithCode.code === "UNAUTHORIZED") {
+              signOut({ callbackUrl: "/login" })
+              return
+            }
+          },
+        }),
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000,
-            retry: 1,
+            retry: (failureCount, error) => {
+              if (failureCount >= 3) return false
+              // Network errors only (TypeError = fetch failed)
+              if (error instanceof TypeError) return true
+              // Don't retry auth/permission errors
+              const errWithCode = error as Error & { code?: string }
+              if (errWithCode.code === "UNAUTHORIZED" || errWithCode.code === "FORBIDDEN") return false
+              return false
+            },
           },
         },
       })
@@ -36,7 +56,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
             shallowRouting
           />
           {children}
-          <Toaster position="top-center" richColors closeButton />
+          <Toaster
+            position="top-center"
+            richColors
+            closeButton
+            duration={2000}
+          />
         </ThemeProvider>
       </QueryClientProvider>
     </SessionProvider>

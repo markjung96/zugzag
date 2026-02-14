@@ -127,6 +127,14 @@ body {
 }
 
 /* Safe area utilities for mobile PWA */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.pr-safe {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }

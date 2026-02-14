@@ -13,6 +13,8 @@ export * from './crews/use-update-crew-mutation'
 export * from './crews/use-delete-crew-mutation'
 export * from './crews/use-update-member-mutation'
 export * from './crews/use-remove-member-mutation'
+export * from './crews/use-leave-crew-mutation'
+export * from './crews/use-regenerate-invite-code-mutation'
 
 // Schedules
 export * from './schedules/use-schedule-query'
@@ -26,6 +28,7 @@ export * from './rsvp/use-cancel-rsvp-mutation'
 
 // Profile
 export * from './profile/use-profile-stats-query'
+export * from './profile/use-update-profile-mutation'
 
 // Users
 export * from './users/use-attendance-query'

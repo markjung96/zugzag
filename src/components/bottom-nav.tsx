@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
@@ -45,6 +45,24 @@ export function BottomNav() {
   const handleMenuClose = () => {
     setShowAddMenu(false)
   }
+
+  useEffect(() => {
+    if (!showAddMenu) return
+
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        handleMenuClose()
+      }
+    }
+
+    document.addEventListener("keydown", handleEsc)
+    document.body.style.overflow = "hidden"
+
+    return () => {
+      document.removeEventListener("keydown", handleEsc)
+      document.body.style.overflow = ""
+    }
+  }, [showAddMenu])
 
   const handleNavigate = (path: string) => {
     setShowAddMenu(false)

@@ -12,5 +12,7 @@ export function useCrewSchedulesQuery(crewId: string) {
       return res.json()
     },
     enabled: !!crewId,
+    staleTime: 60_000,
+    gcTime: 300_000,
   })
 }

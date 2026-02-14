@@ -1,4 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { getErrorMessage } from '@/lib/utils/get-error-message'
 import { scheduleQueryKey } from '../schedules/use-schedule-query'
 import { crewSchedulesQueryKey } from '../crews/use-crew-schedules-query'
 import type { ScheduleDetail } from '@/types/schedule.types'
@@ -9,7 +11,14 @@ export function useCancelRsvpMutation(scheduleId: string, crewId: string) {
   return useMutation({
     mutationFn: async (roundId: string) => {
       const res = await fetch(`/api/rounds/${roundId}/rsvp`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('참석 취소에 실패했습니다')
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        const err = new Error(
+          (errData as { error?: string })?.error || '참석 취소에 실패했습니다'
+        ) as Error & { code?: string }
+        err.code = (errData as { code?: string })?.code
+        throw err
+      }
     },
     onMutate: async (roundId) => {
       await queryClient.cancelQueries({ queryKey: scheduleQueryKey(scheduleId) })
@@ -32,6 +41,7 @@ export function useCancelRsvpMutation(scheduleId: string, crewId: string) {
       if (context?.previous) {
         queryClient.setQueryData(scheduleQueryKey(scheduleId), context.previous)
       }
+      toast.error(getErrorMessage(err), { duration: Infinity })
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: scheduleQueryKey(scheduleId) })

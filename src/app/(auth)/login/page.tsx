@@ -1,16 +1,18 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Mail, Lock, Eye, EyeOff, Mountain } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Mail, Lock, Eye, EyeOff, Mountain, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { signIn } from "next-auth/react"
+import { getErrorMessage } from "@/lib/utils/get-error-message"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -19,6 +21,21 @@ export default function LoginPage() {
     email: "",
     password: "",
   })
+
+  useEffect(() => {
+    const errorParam = searchParams.get("error")
+    if (!errorParam) return
+
+    const messages: Record<string, string> = {
+      OAuthAccountNotLinked: "이미 다른 방법으로 가입된 이메일입니다",
+      OAuthCallback: "소셜 로그인 중 오류가 발생했습니다",
+      OAuthSignin: "소셜 로그인을 시작할 수 없습니다",
+      Callback: "로그인 처리 중 오류가 발생했습니다",
+      Default: "로그인 중 오류가 발생했습니다",
+    }
+
+    setError(messages[errorParam] || messages.Default)
+  }, [searchParams])
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -40,9 +57,9 @@ export default function LoginPage() {
         }
 
         router.push("/crews")
-      } catch (error) {
-        console.error("Login error:", error)
-        setError("로그인 중 오류가 발생했습니다")
+      } catch (err) {
+        console.error("Login error:", err)
+        setError(getErrorMessage(err))
         setIsLoading(false)
       }
     },
@@ -62,7 +79,7 @@ export default function LoginPage() {
   }, [])
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 py-12 pb-safe">
       <div className="mb-10 flex flex-col items-center gap-3">
         <div className="flex items-center gap-2.5 text-primary">
           <Mountain className="h-10 w-10" strokeWidth={2.5} />
@@ -77,7 +94,7 @@ export default function LoginPage() {
         <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive">
+              <div role="alert" className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive">
                 {error}
               </div>
             )}
@@ -99,6 +116,9 @@ export default function LoginPage() {
                   className="h-12 rounded-xl border-input bg-background pl-11 text-base"
                   required
                   disabled={isLoading}
+                  autoFocus
+                  autoComplete="email"
+                  inputMode="email"
                 />
               </div>
             </div>
@@ -128,7 +148,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={togglePassword}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground transition-colors hover:text-foreground"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground"
                   aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
                   disabled={isLoading}
                 >
@@ -146,7 +166,7 @@ export default function LoginPage() {
               className="h-12 w-full rounded-xl text-base font-semibold shadow-md transition-shadow hover:shadow-lg"
               disabled={isLoading}
             >
-              {isLoading ? "로그인 중..." : "로그인"}
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}로그인
             </Button>
 
             <div className="relative py-2">
@@ -165,6 +185,7 @@ export default function LoginPage() {
                 className="h-12 w-full rounded-xl border-input bg-background text-base font-medium transition-colors hover:border-primary/50 hover:bg-primary/5"
                 onClick={handleGoogleLogin}
                 disabled={isLoading}
+                aria-label="Google로 로그인"
               >
                 <svg className="mr-2.5 h-5 w-5" viewBox="0 0 24 24">
                   <path
@@ -193,6 +214,7 @@ export default function LoginPage() {
                 className="h-12 w-full rounded-xl border-input bg-background text-base font-medium transition-colors hover:border-[#FEE500] hover:bg-[#FEE500]/10"
                 onClick={handleKakaoLogin}
                 disabled={isLoading}
+                aria-label="카카오로 로그인"
               >
                 <svg
                   className="mr-2.5 h-5 w-5"

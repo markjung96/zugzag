@@ -16,5 +16,7 @@ export function useProfileStatsQuery() {
       if (!res.ok) throw new Error('프로필 통계를 불러오는데 실패했습니다')
       return res.json()
     },
+    staleTime: Infinity,
+    gcTime: 3_600_000,
   })
 }

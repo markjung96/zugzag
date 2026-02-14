@@ -1,8 +1,8 @@
 "use client"
 
 import { useSession } from "next-auth/react"
-import { Loader2 } from "lucide-react"
 import { BottomNav } from "@/components/bottom-nav"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function MainLayout({
   children,
@@ -13,17 +13,18 @@ export default function MainLayout({
 
   if (status === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">로딩 중...</p>
+      <div className="flex min-h-screen flex-col">
+        <div className="flex-1 p-4 space-y-4">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-48 w-full rounded-2xl" />
+          <Skeleton className="h-48 w-full rounded-2xl" />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       <div className="mx-auto w-full max-w-lg">
         {children}
       </div>

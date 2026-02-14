@@ -12,5 +12,7 @@ export function useSchedulesQuery(limit?: number) {
       if (!res.ok) throw new Error('일정 목록을 불러오는데 실패했습니다')
       return res.json()
     },
+    staleTime: 60_000,
+    gcTime: 300_000,
   })
 }

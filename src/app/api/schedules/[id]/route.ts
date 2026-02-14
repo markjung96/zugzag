@@ -3,7 +3,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { schedules, scheduleRounds, crews, crewMembers, rsvps, users } from "@/lib/db/schema";
-import { eq, and, asc, inArray } from "drizzle-orm";
+import { eq, and, asc, ne } from "drizzle-orm";
 import { handleError, UnauthorizedError, ForbiddenError, NotFoundError } from "@/lib/errors/app-error";
 import { isCrewLeaderOrAdmin, getMemberRole } from "@/lib/utils/check-crew-permission";
 
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
           })
           .from(rsvps)
           .innerJoin(users, eq(rsvps.userId, users.id))
-          .where(eq(rsvps.roundId, round.id))
+          .where(and(eq(rsvps.roundId, round.id), ne(rsvps.status, "cancelled")))
           .orderBy(rsvps.createdAt);
 
         const myRsvp = attendees.find((a) => a.userId === userId);
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
           capacity: round.capacity,
           attendingCount: attending.length,
           waitingCount: waiting.length,
-          myStatus: myRsvp?.status ?? null,
+          myStatus: myRsvp?.status === "cancelled" ? null : myRsvp?.status ?? null,
           attendees: attending.map((a) => ({
             id: a.id,
             userId: a.userId,

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   MapPin,
   Users,
@@ -11,9 +12,20 @@ import {
   MoreHorizontal,
   ChevronDown,
   ChevronUp,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 import { formatTime } from '@/lib/utils/format-time'
 
@@ -66,11 +78,25 @@ export function RoundCard({
   onRsvp,
   onCancel,
 }: RoundCardProps) {
+  const [isWaitlistDialogOpen, setIsWaitlistDialogOpen] = useState(false)
   const config = ROUND_TYPE_CONFIG[round.type]
   const Icon = config.icon
   const isUnlimited = round.capacity === 0
   const isFull = !isUnlimited && round.attendingCount >= round.capacity
   const progressValue = isUnlimited ? 0 : (round.attendingCount / round.capacity) * 100
+
+  const handleRsvpClick = () => {
+    if (isFull && !isUnlimited) {
+      setIsWaitlistDialogOpen(true)
+    } else {
+      onRsvp()
+    }
+  }
+
+  const handleWaitlistConfirm = () => {
+    onRsvp()
+    setIsWaitlistDialogOpen(false)
+  }
 
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden">
@@ -129,11 +155,11 @@ export function RoundCard({
         <div className="mt-4">
           {round.myStatus === null ? (
             <Button
-              onClick={onRsvp}
+              onClick={handleRsvpClick}
               disabled={isLoading}
               className="h-11 w-full rounded-xl text-sm font-semibold"
             >
-              <UserCheck className="mr-2 h-4 w-4" />
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserCheck className="mr-2 h-4 w-4" />}
               {isFull && !isUnlimited ? '대기 등록' : '참석하기'}
             </Button>
           ) : (
@@ -143,7 +169,7 @@ export function RoundCard({
               disabled={isLoading}
               className="h-11 w-full rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
-              <UserX className="mr-2 h-4 w-4" />
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserX className="mr-2 h-4 w-4" />}
               참석 취소
             </Button>
           )}
@@ -201,6 +227,24 @@ export function RoundCard({
           )}
         </>
       )}
+
+      <AlertDialog open={isWaitlistDialogOpen} onOpenChange={setIsWaitlistDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>정원이 마감되었습니다</AlertDialogTitle>
+            <AlertDialogDescription>
+              대기 등록하시겠습니까? 참석자가 취소하면 자동으로 참석이 확정됩니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={handleWaitlistConfirm} disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              대기 등록
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

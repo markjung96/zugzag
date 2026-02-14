@@ -104,7 +104,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
               .limit(1),
           ]);
           attendingCount = countResult[0]?.count ?? 0;
-          myStatus = myRsvp[0]?.status ?? null;
+          myStatus = myRsvp[0]?.status === "cancelled" ? null : (myRsvp[0]?.status ?? null);
         }
 
         return {

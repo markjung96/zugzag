@@ -11,5 +11,7 @@ export function useCrewsQuery() {
       if (!res.ok) throw new Error('크루 목록을 불러오는데 실패했습니다')
       return res.json()
     },
+    staleTime: 600_000,
+    gcTime: 1_800_000,
   })
 }

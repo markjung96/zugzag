@@ -11,5 +11,7 @@ export function useCrewStatsQuery(crewId: string, days: number = 30) {
       return res.json()
     },
     enabled: !!crewId,
+    staleTime: 300_000,
+    gcTime: 900_000,
   })
 }

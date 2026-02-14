@@ -12,5 +12,7 @@ export function useScheduleQuery(scheduleId: string) {
       return res.json()
     },
     enabled: !!scheduleId,
+    staleTime: 30_000,
+    gcTime: 180_000,
   })
 }

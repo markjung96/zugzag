@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
+import { db, sql } from "@/lib/db";
 import { schedules, scheduleRounds, crewMembers, rsvps } from "@/lib/db/schema";
-import { eq, and, asc, sql } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import { handleError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError } from "@/lib/errors/app-error";
 
 type RouteContext = {
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       throw new ForbiddenError("크루 멤버만 참석 신청할 수 있습니다");
     }
 
-    // 이미 RSVP했는지 확인
+    // 이미 RSVP했는지 확인 (cancelled는 재신청 가능)
     const existingRsvp = await db
       .select()
       .from(rsvps)
@@ -70,39 +70,108 @@ export async function POST(request: NextRequest, context: RouteContext) {
       .limit(1);
 
     if (existingRsvp.length > 0) {
-      throw new ConflictError("이미 참석 신청했습니다");
+      const existing = existingRsvp[0];
+      if (existing.status !== "cancelled") {
+        throw new ConflictError("이미 참석 신청했습니다");
+      }
+
+      // 취소된 RSVP가 있으면 UPDATE로 재신청 (중복 row 방지)
+      const [updateResult] = await sql.transaction([
+        sql`
+        WITH round_info AS (
+          SELECT capacity FROM schedule_rounds WHERE id = ${roundId}
+        ),
+        attending_count AS (
+          SELECT count(*)::int AS cnt FROM rsvps
+          WHERE round_id = ${roundId} AND status = 'attending'
+        ),
+        new_status AS (
+          SELECT
+            CASE
+              WHEN r.capacity = 0 THEN 'attending'::rsvp_status
+              WHEN a.cnt < r.capacity THEN 'attending'::rsvp_status
+              ELSE 'waiting'::rsvp_status
+            END AS status
+          FROM round_info r
+          CROSS JOIN attending_count a
+        )
+        UPDATE rsvps
+        SET status = (SELECT status FROM new_status)
+        WHERE round_id = ${roundId}::uuid AND user_id = ${userId}::uuid AND status = 'cancelled'
+        RETURNING *
+        `,
+      ]);
+
+      const row = updateResult?.[0] as Record<string, unknown> | undefined;
+      if (!row) {
+        return NextResponse.json(
+          { error: "RSVP 재신청에 실패했습니다", code: "INTERNAL_ERROR" },
+          { status: 500 }
+        );
+      }
+
+      const status = row.status as "attending" | "waiting";
+      const newRsvp = {
+        id: row.id,
+        roundId: row.round_id,
+        userId: row.user_id,
+        status: row.status,
+        createdAt: row.created_at,
+      };
+      return NextResponse.json(
+        {
+          ...newRsvp,
+          message: status === "attending" ? "참석 신청되었습니다" : "대기 등록되었습니다",
+        },
+        { status: 201 },
+      );
     }
 
-    // 정원이 무제한(0)이면 항상 참석
-    const isUnlimited = roundData.capacity === 0;
-    let status: "attending" | "waiting" = "attending";
+    // 트랜잭션: 정원 확인 + RSVP 삽입을 원자적으로 실행 (race condition 방지)
+    const [insertResult] = await sql.transaction([
+      sql`
+      WITH round_info AS (
+        SELECT capacity FROM schedule_rounds WHERE id = ${roundId}
+      ),
+      attending_count AS (
+        SELECT count(*)::int AS cnt FROM rsvps
+        WHERE round_id = ${roundId} AND status = 'attending'
+      ),
+      new_status AS (
+        SELECT
+          CASE
+            WHEN r.capacity = 0 THEN 'attending'::rsvp_status
+            WHEN a.cnt < r.capacity THEN 'attending'::rsvp_status
+            ELSE 'waiting'::rsvp_status
+          END AS status
+        FROM round_info r
+        CROSS JOIN attending_count a
+      )
+      INSERT INTO rsvps (round_id, user_id, status)
+      SELECT ${roundId}::uuid, ${userId}::uuid, status FROM new_status
+      RETURNING *
+    `,
+    ]);
 
-    if (!isUnlimited) {
-      // 현재 참석자 수 확인
-      const attendingCount = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(rsvps)
-        .where(and(eq(rsvps.roundId, roundId), eq(rsvps.status, "attending")));
-
-      const currentCount = attendingCount[0]?.count ?? 0;
-
-      // 정원 초과 시 대기, 아니면 참석
-      status = currentCount < roundData.capacity ? "attending" : "waiting";
+    const row = insertResult?.[0] as Record<string, unknown> | undefined;
+    if (!row) {
+      return NextResponse.json(
+        { error: "RSVP 생성에 실패했습니다", code: "INTERNAL_ERROR" },
+        { status: 500 }
+      );
     }
 
-    // RSVP 생성
-    const newRsvp = await db
-      .insert(rsvps)
-      .values({
-        roundId,
-        userId,
-        status,
-      })
-      .returning();
-
+    const status = row.status as "attending" | "waiting";
+    const newRsvp = {
+      id: row.id,
+      roundId: row.round_id,
+      userId: row.user_id,
+      status: row.status,
+      createdAt: row.created_at,
+    };
     return NextResponse.json(
       {
-        ...newRsvp[0],
+        ...newRsvp,
         message: status === "attending" ? "참석 신청되었습니다" : "대기 등록되었습니다",
       },
       { status: 201 },
@@ -139,8 +208,13 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
     const wasAttending = myRsvp[0].status === "attending";
 
-    // RSVP 삭제
-    await db.delete(rsvps).where(and(eq(rsvps.roundId, roundId), eq(rsvps.userId, userId)));
+    // 이미 취소된 상태면 성공 반환 (idempotent)
+    if (myRsvp[0].status === "cancelled") {
+      return NextResponse.json({ success: true, message: "참석 취소되었습니다" });
+    }
+
+    // RSVP 삭제 대신 status를 'cancelled'로 업데이트
+    await db.update(rsvps).set({ status: "cancelled" }).where(and(eq(rsvps.roundId, roundId), eq(rsvps.userId, userId)));
 
     // 참석 취소 시 대기자 자동 승격
     if (wasAttending) {

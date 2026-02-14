@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -141,7 +141,7 @@ export function LoginForm({ redirectUrl = '/crews' }: LoginFormProps) {
           className="h-12 w-full rounded-xl text-base font-semibold shadow-md transition-shadow hover:shadow-lg"
           disabled={isLoading}
         >
-          {isLoading ? '로그인 중...' : '로그인'}
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}로그인
         </Button>
 
         <div className="relative py-2">

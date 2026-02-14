@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { schedules, scheduleRounds, crewMembers, crews, rsvps } from "@/lib/db/schema";
@@ -8,8 +8,9 @@ import { handleError, UnauthorizedError } from "@/lib/errors/app-error";
 /**
  * 사용자의 모든 크루 일정 조회 API
  * GET /api/schedules
+ * Query: limit (optional) - 반환할 일정 수 제한 (1~100)
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -18,9 +19,14 @@ export async function GET() {
 
     const userId = session.user.id;
     const today = new Date().toISOString().split("T")[0];
+    const { searchParams } = new URL(request.url);
+    const limitParam = searchParams.get("limit");
+    const limit = limitParam
+      ? Math.min(Math.max(parseInt(limitParam, 10) || 0, 1), 100)
+      : undefined;
 
     // 사용자가 속한 크루의 모든 일정 조회
-    const userSchedules = await db
+    const baseQuery = db
       .select({
         id: schedules.id,
         title: schedules.title,
@@ -34,6 +40,10 @@ export async function GET() {
       .innerJoin(crewMembers, eq(crews.id, crewMembers.crewId))
       .where(and(eq(crewMembers.userId, userId), gte(schedules.date, today)))
       .orderBy(asc(schedules.date));
+
+    const userSchedules = limit
+      ? await baseQuery.limit(limit)
+      : await baseQuery;
 
     // 각 일정의 일정와 첫 번째 일정의 참석 현황 조회
     const schedulesWithRounds = await Promise.all(
@@ -63,7 +73,7 @@ export async function GET() {
               .limit(1),
           ]);
           attendingCount = countResult[0]?.count ?? 0;
-          myStatus = myRsvp[0]?.status ?? null;
+          myStatus = myRsvp[0]?.status === "cancelled" ? null : (myRsvp[0]?.status ?? null);
         }
 
         return {

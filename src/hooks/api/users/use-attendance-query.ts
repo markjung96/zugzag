@@ -9,6 +9,8 @@ interface AttendanceStats {
   crewStats: Array<{
     crewId: string
     crewName: string
+    attended: number
+    total: number
     attendanceRate: number
   }>
 }
@@ -21,5 +23,7 @@ export function useAttendanceQuery() {
       if (!res.ok) throw new Error('출석 통계를 불러오는데 실패했습니다')
       return res.json()
     },
+    staleTime: 300_000,
+    gcTime: 900_000,
   })
 }

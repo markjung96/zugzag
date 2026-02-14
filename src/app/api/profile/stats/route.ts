@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { crewMembers, rsvps, schedules, scheduleRounds } from "@/lib/db/schema";
-import { eq, and, gte, sql } from "drizzle-orm";
+import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { handleError, UnauthorizedError } from "@/lib/errors/app-error";
 
 /**
@@ -24,6 +24,8 @@ export async function GET() {
       .from(crewMembers)
       .where(eq(crewMembers.userId, userId));
 
+    const today = new Date().toISOString().split("T")[0];
+
     // 총 출석 수 (스케줄당 exercise 일정 중 하나라도 참석하면 1회로 카운트)
     const attendanceResult = await db
       .select({ count: sql<number>`count(distinct ${schedules.id})::int` })
@@ -32,19 +34,29 @@ export async function GET() {
       .innerJoin(schedules, eq(scheduleRounds.scheduleId, schedules.id))
       .where(and(eq(rsvps.userId, userId), eq(rsvps.status, "attending"), eq(scheduleRounds.type, "exercise")));
 
-    // 다가오는 일정 수 (오늘 이후, 첫 번째 일정 기준)
-    const today = new Date().toISOString().split("T")[0];
-    const upcomingResult = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(rsvps)
-      .innerJoin(scheduleRounds, eq(rsvps.roundId, scheduleRounds.id))
+    // 전체 운동 일정 수 (사용자가 속한 크루의 과거 exercise 스케줄, 출석률 분모)
+    const totalSchedulesResult = await db
+      .select({ count: sql<number>`count(distinct ${schedules.id})::int` })
+      .from(scheduleRounds)
       .innerJoin(schedules, eq(scheduleRounds.scheduleId, schedules.id))
-      .where(and(eq(rsvps.userId, userId), eq(rsvps.status, "attending"), gte(schedules.date, today)));
+      .innerJoin(crewMembers, eq(schedules.crewId, crewMembers.crewId))
+      .where(
+        and(
+          eq(crewMembers.userId, userId),
+          eq(scheduleRounds.type, "exercise"),
+          lte(schedules.date, today),
+        ),
+      );
+
+    const totalCrews = crewCountResult[0]?.count ?? 0;
+    const totalSchedules = attendanceResult[0]?.count ?? 0;
+    const totalPastSchedules = totalSchedulesResult[0]?.count ?? 0;
+    const attendanceRate = totalPastSchedules > 0 ? Math.round((totalSchedules / totalPastSchedules) * 100) / 100 : 0;
 
     return NextResponse.json({
-      crewCount: crewCountResult[0]?.count ?? 0,
-      totalAttendance: attendanceResult[0]?.count ?? 0,
-      upcomingSchedules: upcomingResult[0]?.count ?? 0,
+      totalCrews,
+      totalSchedules,
+      attendanceRate,
     });
   } catch (error) {
     return handleError(error);

@@ -24,7 +24,7 @@ export default function AuthLayout({
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="absolute right-0 top-0 z-10 p-4">
+      <header className="absolute right-0 top-0 z-10 p-4 pt-safe pr-safe">
         {mounted && (
           <Button
             variant="ghost"
