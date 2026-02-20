@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import Image from 'next/image'
-import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
-import { useState, useCallback } from 'react'
+import Image from "next/image";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useState } from "react";
 import {
   ArrowLeft,
   Users,
@@ -15,17 +15,16 @@ import {
   ShieldCheck,
   ShieldOff,
   Loader2,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { RefetchOverlay } from '@/components/ui/refetch-overlay'
-import { Skeleton } from '@/components/ui/skeleton'
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { RefetchOverlay } from "@/components/ui/refetch-overlay";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,66 +34,49 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { useCrewQuery } from '@/hooks/api/crews/use-crew-query'
-import { useCrewMembersQuery } from '@/hooks/api/crews/use-crew-members-query'
-import { useUpdateMemberMutation } from '@/hooks/api/crews/use-update-member-mutation'
-import { useRemoveMemberMutation } from '@/hooks/api/crews/use-remove-member-mutation'
-import { toast } from 'sonner'
-import type { CrewMember } from '@/types/crew.types'
-
-type Role = 'leader' | 'admin' | 'member'
+} from "@/components/ui/alert-dialog";
+import { useCrewQuery } from "@/hooks/api/crews/use-crew-query";
+import { useCrewMembersQuery } from "@/hooks/api/crews/use-crew-members-query";
+import { useUpdateMemberMutation } from "@/hooks/api/crews/use-update-member-mutation";
+import { useRemoveMemberMutation } from "@/hooks/api/crews/use-remove-member-mutation";
+import { toast } from "sonner";
+import type { CrewMember, Role } from "@/types/crew.types";
 
 const ROLE_CONFIG: Record<Role, { label: string; icon: typeof Crown; color: string }> = {
-  leader: { label: '크루장', icon: Crown, color: 'text-warning' },
-  admin: { label: '운영진', icon: Shield, color: 'text-primary' },
-  member: { label: '멤버', icon: User, color: 'text-muted-foreground' },
-}
+  leader: { label: "크루장", icon: Crown, color: "text-warning" },
+  admin: { label: "운영진", icon: Shield, color: "text-primary" },
+  member: { label: "멤버", icon: User, color: "text-muted-foreground" },
+};
 
 export function CrewMembersContent() {
-  const params = useParams()
-  const router = useRouter()
-  const crewId = params.id as string
+  const { id: crewId } = useParams<{ id: string }>();
 
-  const { data: crew, isLoading: crewLoading } = useCrewQuery(crewId)
-  const { data: membersData, isLoading: membersLoading, isFetching: membersFetching } = useCrewMembersQuery(crewId)
+  const { data: crew } = useCrewQuery(crewId);
+  const { data: membersData, isFetching: membersFetching } = useCrewMembersQuery(crewId);
 
-  const updateRoleMutation = useUpdateMemberMutation(crewId)
-  const removeMemberMutation = useRemoveMemberMutation(crewId)
+  const updateRoleMutation = useUpdateMemberMutation(crewId);
+  const removeMemberMutation = useRemoveMemberMutation(crewId);
 
-  const [kickTarget, setKickTarget] = useState<CrewMember | null>(null)
+  const [kickTarget, setKickTarget] = useState<CrewMember | null>(null);
 
-  const members = membersData?.members ?? []
+  const members = membersData?.members ?? [];
 
-  const handleKick = useCallback(() => {
+  const handleKick = () => {
     if (kickTarget) {
       removeMemberMutation.mutate(kickTarget.id, {
         onSuccess: () => {
-          setKickTarget(null)
-          toast.success('멤버가 크루에서 제거되었습니다')
+          setKickTarget(null);
+          toast.success("멤버가 크루에서 제거되었습니다");
         },
-      })
+      });
     }
-  }, [kickTarget, removeMemberMutation])
+  };
 
-  if (crewLoading || membersLoading) {
-    return <LoadingState />
-  }
-
-  if (!crew) {
-    router.push('/crews')
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-
-  const isLeader = crew.myRole === 'leader'
+  const isLeader = crew.myRole === "leader";
   const sortedMembers = [...members].sort((a, b) => {
-    const roleOrder = { leader: 0, admin: 1, member: 2 }
-    return roleOrder[a.role] - roleOrder[b.role]
-  })
+    const roleOrder = { leader: 0, admin: 1, member: 2 };
+    return roleOrder[a.role] - roleOrder[b.role];
+  });
 
   return (
     <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
@@ -125,27 +107,27 @@ export function CrewMembersContent() {
           </div>
           <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
             <Shield className="h-3 w-3" />
-            운영진 {members.filter((m) => m.role === 'admin').length}
+            운영진 {members.filter((m) => m.role === "admin").length}
           </div>
           <div className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
             <User className="h-3 w-3" />
-            멤버 {members.filter((m) => m.role === 'member').length}
+            멤버 {members.filter((m) => m.role === "member").length}
           </div>
         </div>
 
         <RefetchOverlay isFetching={membersFetching}>
-        <div className="flex flex-col gap-2">
-          {sortedMembers.map((member) => (
-            <MemberCard
-              key={member.id}
-              member={member}
-              isLeader={isLeader}
-              onRoleChange={(role) => updateRoleMutation.mutate({ memberId: member.id, role })}
-              onKick={() => setKickTarget(member)}
-              isUpdating={updateRoleMutation.isPending}
-            />
-          ))}
-        </div>
+          <div className="flex flex-col gap-2">
+            {sortedMembers.map((member) => (
+              <MemberCard
+                key={member.id}
+                member={member}
+                isLeader={isLeader}
+                onRoleChange={(role) => updateRoleMutation.mutate({ memberId: member.id, role })}
+                onKick={() => setKickTarget(member)}
+                isUpdating={updateRoleMutation.isPending}
+              />
+            ))}
+          </div>
         </RefetchOverlay>
       </div>
 
@@ -154,8 +136,8 @@ export function CrewMembersContent() {
           <AlertDialogHeader>
             <AlertDialogTitle>멤버 내보내기</AlertDialogTitle>
             <AlertDialogDescription>
-              <span className="font-semibold text-foreground">{kickTarget?.name}</span>님을 크루에서
-              내보내시겠습니까? 이 작업은 되돌릴 수 없습니다.
+              <span className="font-semibold text-foreground">{kickTarget?.name}</span>님을 크루에서 내보내시겠습니까?
+              이 작업은 되돌릴 수 없습니다.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -172,7 +154,7 @@ export function CrewMembersContent() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }
 
 function MemberCard({
@@ -182,25 +164,31 @@ function MemberCard({
   onKick,
   isUpdating,
 }: {
-  member: CrewMember
-  isLeader: boolean
-  onRoleChange: (role: 'admin' | 'member') => void
-  onKick: () => void
-  isUpdating: boolean
+  member: CrewMember;
+  isLeader: boolean;
+  onRoleChange: (role: "admin" | "member") => void;
+  onKick: () => void;
+  isUpdating: boolean;
 }) {
-  const roleConfig = ROLE_CONFIG[member.role]
-  const RoleIcon = roleConfig.icon
-  const canManageMember = isLeader && member.role !== 'leader'
+  const roleConfig = ROLE_CONFIG[member.role];
+  const RoleIcon = roleConfig.icon;
+  const canManageMember = isLeader && member.role !== "leader";
 
-  const joinedDate = new Date(member.joinedAt)
-  const formattedDate = `${joinedDate.getFullYear()}.${String(joinedDate.getMonth() + 1).padStart(2, '0')}.${String(joinedDate.getDate()).padStart(2, '0')}`
+  const joinedDate = new Date(member.joinedAt);
+  const formattedDate = `${joinedDate.getFullYear()}.${String(joinedDate.getMonth() + 1).padStart(2, "0")}.${String(joinedDate.getDate()).padStart(2, "0")}`;
 
   return (
     <div className="flex items-center justify-between rounded-xl border border-border bg-card p-4 transition-colors hover:bg-accent/50">
       <div className="flex items-center gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted text-lg font-bold text-muted-foreground">
           {member.image ? (
-            <Image src={member.image} alt={member.name} width={44} height={44} className="h-full w-full rounded-full object-cover" />
+            <Image
+              src={member.image}
+              alt={member.name}
+              width={44}
+              height={44}
+              className="h-full w-full rounded-full object-cover"
+            />
           ) : (
             member.name.charAt(0).toUpperCase()
           )}
@@ -225,13 +213,13 @@ function MemberCard({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
-            {member.role === 'member' ? (
-              <DropdownMenuItem onClick={() => onRoleChange('admin')} className="gap-2">
+            {member.role === "member" ? (
+              <DropdownMenuItem onClick={() => onRoleChange("admin")} className="gap-2">
                 <ShieldCheck className="h-4 w-4" />
                 운영진으로 승급
               </DropdownMenuItem>
             ) : (
-              <DropdownMenuItem onClick={() => onRoleChange('member')} className="gap-2">
+              <DropdownMenuItem onClick={() => onRoleChange("member")} className="gap-2">
                 <ShieldOff className="h-4 w-4" />
                 멤버로 변경
               </DropdownMenuItem>
@@ -245,28 +233,5 @@ function MemberCard({
         </DropdownMenu>
       )}
     </div>
-  )
-}
-
-function LoadingState() {
-  return (
-    <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
-        <div className="flex h-14 items-center gap-3 px-4">
-          <Skeleton className="h-10 w-10 rounded-xl" />
-          <Skeleton className="h-5 w-24 rounded-lg" />
-        </div>
-      </header>
-      <div className="flex flex-1 flex-col gap-4 px-4 py-5">
-        <div className="flex gap-2">
-          <Skeleton className="h-7 w-20 rounded-full" />
-          <Skeleton className="h-7 w-20 rounded-full" />
-          <Skeleton className="h-7 w-20 rounded-full" />
-        </div>
-        {[1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} className="h-20 rounded-xl" />
-        ))}
-      </div>
-    </div>
-  )
+  );
 }

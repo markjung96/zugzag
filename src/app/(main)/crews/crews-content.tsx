@@ -1,28 +1,18 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { useTheme } from 'next-themes'
-import { Users, Moon, Sun, ChevronRight, Plus, UserPlus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useCrewsQuery } from '@/hooks/api/crews/use-crews-query'
-import type { Crew } from '@/types/crew.types'
+import Link from "next/link";
+import { useTheme } from "next-themes";
+import { Users, Moon, Sun, ChevronRight, Plus, UserPlus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCrewsQuery } from "@/hooks/api/crews/use-crews-query";
+import type { Crew } from "@/types/crew.types";
 
 export function CrewsContent() {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme } = useTheme();
 
-  const { data, isLoading, error } = useCrewsQuery()
-
-  if (isLoading) {
-    return <LoadingState />
-  }
-
-  if (error) {
-    return <ErrorState error={error as Error} />
-  }
-
-  const crews = data?.crews ?? []
-  const hasCrews = crews.length > 0
+  const { data } = useCrewsQuery();
+  const crews = data.crews;
+  const hasCrews = crews.length > 0;
 
   return (
     <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
@@ -41,15 +31,11 @@ export function CrewsContent() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="h-10 w-10 rounded-xl"
             aria-label="테마 전환"
           >
-            {theme === 'dark' ? (
-              <Sun className="h-5 w-5" />
-            ) : (
-              <Moon className="h-5 w-5" />
-            )}
+            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
         </div>
       </header>
@@ -66,7 +52,7 @@ export function CrewsContent() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 function CrewCard({ crew }: { crew: Crew }) {
@@ -93,7 +79,7 @@ function CrewCard({ crew }: { crew: Crew }) {
         <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
       </div>
     </Link>
-  )
+  );
 }
 
 function EmptyState() {
@@ -126,73 +112,5 @@ function EmptyState() {
         </Link>
       </div>
     </div>
-  )
-}
-
-function LoadingState() {
-  return (
-    <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
-        <div className="flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-5 w-5 rounded" />
-            <Skeleton className="h-5 w-16 rounded-lg" />
-          </div>
-          <Skeleton className="h-10 w-10 rounded-xl" />
-        </div>
-      </header>
-      <div className="flex flex-1 flex-col gap-6 px-4 py-5">
-        <div className="flex flex-col gap-4">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4"
-            >
-              <Skeleton className="h-14 w-14 shrink-0 rounded-xl" />
-              <div className="min-w-0 flex-1 space-y-2">
-                <Skeleton className="h-5 w-32" />
-                <Skeleton className="h-4 w-24" />
-              </div>
-              <Skeleton className="h-5 w-5 shrink-0 rounded" />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function ErrorState({ error }: { error: Error }) {
-  return (
-    <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
-        <div className="flex h-14 items-center gap-2 px-4">
-          <Users className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-bold">내 크루</h1>
-        </div>
-      </header>
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
-        <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-destructive/10">
-          <svg className="h-12 w-12 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
-        </div>
-        <div className="text-center">
-          <h3 className="mb-2 text-lg font-bold text-destructive">크루를 불러올 수 없습니다</h3>
-          <p className="text-sm text-muted-foreground">{error.message}</p>
-        </div>
-        <Button
-          onClick={() => window.location.reload()}
-          className="rounded-xl px-5"
-        >
-          다시 시도
-        </Button>
-      </div>
-    </div>
-  )
+  );
 }

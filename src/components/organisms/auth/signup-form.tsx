@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Mail, Lock, User, Eye, EyeOff, Check, X, Loader2 } from 'lucide-react'
@@ -41,64 +41,61 @@ export function SignupForm({ redirectUrl = '/crews', onLoadingChange }: SignupFo
     formData.confirmPassword.length > 0 &&
     formData.password !== formData.confirmPassword
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault()
-      if (!passwordsMatch || !agreedToTerms || !agreedToPrivacy) return
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!passwordsMatch || !agreedToTerms || !agreedToPrivacy) return
 
-      setIsLoading(true)
-      setError('')
+    setIsLoading(true)
+    setError('')
 
-      try {
-        const response = await fetch('/api/auth/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password,
-            name: formData.nickname,
-            agreedToTerms: true,
-            agreedToPrivacy: true,
-          }),
-        })
-
-        const data = await response.json()
-
-        if (!response.ok) {
-          setError(data.error || '회원가입에 실패했습니다')
-          setIsLoading(false)
-          return
-        }
-
-        const signInResult = await signIn('credentials', {
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          redirect: false,
-        })
+          name: formData.nickname,
+          agreedToTerms: true,
+          agreedToPrivacy: true,
+        }),
+      })
 
-        if (signInResult?.error) {
-          setError('회원가입은 성공했으나 로그인에 실패했습니다')
-          setIsLoading(false)
-          return
-        }
+      const data = await response.json()
 
-        router.push(redirectUrl)
-      } catch (err) {
-        console.error('Signup error:', err)
-        setError(getErrorMessage(err))
+      if (!response.ok) {
+        setError(data.error || '회원가입에 실패했습니다')
         setIsLoading(false)
+        return
       }
-    },
-    [formData, passwordsMatch, agreedToTerms, agreedToPrivacy, router, redirectUrl]
-  )
 
-  const togglePassword = useCallback(() => {
+      const signInResult = await signIn('credentials', {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      })
+
+      if (signInResult?.error) {
+        setError('회원가입은 성공했으나 로그인에 실패했습니다')
+        setIsLoading(false)
+        return
+      }
+
+      router.push(redirectUrl)
+    } catch (err) {
+      console.error('Signup error:', err)
+      setError(getErrorMessage(err))
+      setIsLoading(false)
+    }
+  }
+
+  const togglePassword = () => {
     setShowPassword((prev) => !prev)
-  }, [])
+  }
 
-  const toggleConfirmPassword = useCallback(() => {
+  const toggleConfirmPassword = () => {
     setShowConfirmPassword((prev) => !prev)
-  }, [])
+  }
 
   useEffect(() => {
     onLoadingChange?.(isLoading)

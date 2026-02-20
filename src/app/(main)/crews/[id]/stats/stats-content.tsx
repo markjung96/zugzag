@@ -7,13 +7,13 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useCrewQuery } from "@/hooks/api/crews/use-crew-query";
+import { crewStatsQueryKey } from "@/hooks/api/crews/use-crew-stats-query";
 import { ArrowLeft, BarChart3, Users, Calendar, TrendingUp, Crown, Shield, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { RefetchOverlay } from "@/components/ui/refetch-overlay";
 import { Skeleton } from "@/components/ui/skeleton";
-
-type Role = "leader" | "admin" | "member";
+import type { Role } from "@/types/crew.types";
 
 type MemberStat = {
   memberId: string;
@@ -53,21 +53,23 @@ async function fetchStats(crewId: string, days: number): Promise<StatsData> {
 }
 
 export function CrewStatsContent() {
-  const params = useParams();
+  const { id: crewId } = useParams<{ id: string }>();
   const router = useRouter();
-  const crewId = params.id as string;
+
+  const { data: crew } = useCrewQuery(crewId);
 
   const [period, setPeriod] = useState(30);
 
-  const { data: crew, isLoading: crewLoading } = useCrewQuery(crewId);
-  const { data: stats, isLoading: statsLoading, isFetching: statsFetching, isError, refetch } = useQuery({
-    queryKey: ["crew-stats", crewId, period],
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isFetching: statsFetching,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: crewStatsQueryKey(crewId, period),
     queryFn: () => fetchStats(crewId, period),
   });
-
-  if (crewLoading) {
-    return <LoadingState />;
-  }
 
   if (!crew || !crew.canManage) {
     toast.info("리더만 접근할 수 있습니다");
@@ -146,55 +148,55 @@ export function CrewStatsContent() {
         ) : stats ? (
           <RefetchOverlay isFetching={statsFetching}>
             <>
-            <div className="grid grid-cols-3 gap-3">
-              <StatCard
-                icon={Calendar}
-                label="총 일정"
-                value={stats.totalSchedules}
-                unit="회"
-                color="bg-primary/10 text-primary"
-              />
-              <StatCard
-                icon={Users}
-                label="총 출석"
-                value={stats.totalAttendance}
-                unit="회"
-                color="bg-success/10 text-success"
-              />
-              <StatCard
-                icon={TrendingUp}
-                label="평균 출석률"
-                value={Math.round(stats.averageAttendanceRate * 100)}
-                unit="%"
-                color="bg-warning/10 text-warning"
-              />
-            </div>
-
-            <section>
-              <div className="mb-4 flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-bold">멤버별 출석률</h3>
+              <div className="grid grid-cols-3 gap-3">
+                <StatCard
+                  icon={Calendar}
+                  label="총 일정"
+                  value={stats.totalSchedules}
+                  unit="회"
+                  color="bg-primary/10 text-primary"
+                />
+                <StatCard
+                  icon={Users}
+                  label="총 출석"
+                  value={stats.totalAttendance}
+                  unit="회"
+                  color="bg-success/10 text-success"
+                />
+                <StatCard
+                  icon={TrendingUp}
+                  label="평균 출석률"
+                  value={Math.round(stats.averageAttendanceRate * 100)}
+                  unit="%"
+                  color="bg-warning/10 text-warning"
+                />
               </div>
-              {stats.memberStats.length > 0 ? (
-                <div className="flex flex-col gap-3">
-                  {stats.memberStats.map((member, index) => (
-                    <MemberStatCard key={member.memberId} member={member} rank={index + 1} />
-                  ))}
+
+              <section>
+                <div className="mb-4 flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-bold">멤버별 출석률</h3>
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/20 py-16">
-                  <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5">
-                    <BarChart3 className="h-10 w-10 text-primary" />
+                {stats.memberStats.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    {stats.memberStats.map((member, index) => (
+                      <MemberStatCard key={member.memberId} member={member} rank={index + 1} />
+                    ))}
                   </div>
-                  <h3 className="mb-2 text-xl font-bold">아직 출석 데이터가 없어요</h3>
-                  <p className="text-center text-sm leading-relaxed text-muted-foreground">
-                    일정을 진행하면
-                    <br />
-                    출석 통계가 표시됩니다
-                  </p>
-                </div>
-              )}
-            </section>
+                ) : (
+                  <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/20 py-16">
+                    <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5">
+                      <BarChart3 className="h-10 w-10 text-primary" />
+                    </div>
+                    <h3 className="mb-2 text-xl font-bold">아직 출석 데이터가 없어요</h3>
+                    <p className="text-center text-sm leading-relaxed text-muted-foreground">
+                      일정을 진행하면
+                      <br />
+                      출석 통계가 표시됩니다
+                    </p>
+                  </div>
+                )}
+              </section>
             </>
           </RefetchOverlay>
         ) : null}
@@ -236,9 +238,12 @@ function MemberStatCard({ member, rank }: { member: MemberStat; rank: number }) 
   const percentage = Math.round(member.rate * 100);
 
   const getRankBadge = () => {
-    if (rank === 1) return "bg-gradient-to-br from-warning to-warning/70 text-warning-foreground shadow-sm shadow-warning/30";
-    if (rank === 2) return "bg-gradient-to-br from-muted-foreground/50 to-muted-foreground/80 text-white shadow-sm shadow-muted-foreground/30";
-    if (rank === 3) return "bg-gradient-to-br from-warning/70 to-warning/50 text-warning-foreground shadow-sm shadow-warning/30";
+    if (rank === 1)
+      return "bg-gradient-to-br from-warning to-warning/70 text-warning-foreground shadow-sm shadow-warning/30";
+    if (rank === 2)
+      return "bg-gradient-to-br from-muted-foreground/50 to-muted-foreground/80 text-white shadow-sm shadow-muted-foreground/30";
+    if (rank === 3)
+      return "bg-gradient-to-br from-warning/70 to-warning/50 text-warning-foreground shadow-sm shadow-warning/30";
     return "bg-muted text-muted-foreground";
   };
 
@@ -246,14 +251,18 @@ function MemberStatCard({ member, rank }: { member: MemberStat; rank: number }) 
     <div className="rounded-2xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-md hover:shadow-primary/5">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div
-            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${getRankBadge()}`}
-          >
+          <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${getRankBadge()}`}>
             {rank}
           </div>
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-muted to-muted/50 text-sm font-bold text-muted-foreground">
             {member.image ? (
-              <Image src={member.image} alt={member.name} width={44} height={44} className="h-full w-full rounded-full object-cover" />
+              <Image
+                src={member.image}
+                alt={member.name}
+                width={44}
+                height={44}
+                className="h-full w-full rounded-full object-cover"
+              />
             ) : (
               member.name.charAt(0).toUpperCase()
             )}
@@ -268,34 +277,13 @@ function MemberStatCard({ member, rank }: { member: MemberStat; rank: number }) 
             </p>
           </div>
         </div>
-        <span className={`text-xl font-bold ${percentage >= 80 ? "text-success" : percentage >= 50 ? "text-warning" : "text-destructive"}`}>
+        <span
+          className={`text-xl font-bold ${percentage >= 80 ? "text-success" : percentage >= 50 ? "text-warning" : "text-destructive"}`}
+        >
           {percentage}%
         </span>
       </div>
       <Progress value={percentage} className="h-1.5" />
-    </div>
-  );
-}
-
-function LoadingState() {
-  return (
-    <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
-        <div className="flex h-14 items-center gap-3 px-4">
-          <Skeleton className="h-10 w-10 rounded-xl" />
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-5 w-5 rounded" />
-            <Skeleton className="h-5 w-20 rounded-lg" />
-          </div>
-        </div>
-      </header>
-      <div className="flex flex-1 flex-col gap-6 px-4 py-5">
-        <div className="flex justify-between">
-          <Skeleton className="h-5 w-32 rounded-lg" />
-          <Skeleton className="h-10 w-28 rounded-xl" />
-        </div>
-        <StatsLoadingState />
-      </div>
     </div>
   );
 }

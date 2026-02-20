@@ -1,18 +1,18 @@
-import { useQuery } from '@tanstack/react-query'
-import type { CrewMember } from '@/types/crew.types'
+import { useSuspenseQuery } from "@tanstack/react-query";
+import type { CrewMember } from "@/types/crew.types";
+import { CACHE_TIME } from "@/lib/constants/cache";
 
-export const crewMembersQueryKey = (crewId: string) => ['crew-members', crewId] as const
+export const crewMembersQueryKey = (crewId: string) => ["crew-members", crewId] as const;
 
 export function useCrewMembersQuery(crewId: string) {
-  return useQuery({
+  return useSuspenseQuery({
     queryKey: crewMembersQueryKey(crewId),
     queryFn: async (): Promise<{ members: CrewMember[] }> => {
-      const res = await fetch(`/api/crews/${crewId}/members`)
-      if (!res.ok) throw new Error('멤버 목록을 불러오는데 실패했습니다')
-      return res.json()
+      const res = await fetch(`/api/crews/${crewId}/members`);
+      if (!res.ok) throw new Error("멤버 목록을 불러오는데 실패했습니다");
+      return res.json();
     },
-    enabled: !!crewId,
-    staleTime: 300_000,
-    gcTime: 900_000,
-  })
+    staleTime: CACHE_TIME.static,
+    gcTime: CACHE_TIME.gc,
+  });
 }

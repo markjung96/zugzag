@@ -62,6 +62,17 @@ export interface ScheduleRoundListItem {
   capacity: number
 }
 
+export interface PlaceInfo {
+  id: string
+  name: string
+  address: string
+  category?: string
+  phone?: string
+  x: string
+  y: string
+  url?: string
+}
+
 export interface CrewScheduleListItem {
   id: string
   title: string

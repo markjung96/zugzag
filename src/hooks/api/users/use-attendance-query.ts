@@ -1,29 +1,30 @@
-import { useQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { CACHE_TIME } from "@/lib/constants/cache";
 
-export const attendanceQueryKey = ['user-attendance'] as const
+export const attendanceQueryKey = ["user-attendance"] as const;
 
 interface AttendanceStats {
-  totalSchedules: number
-  attendedSchedules: number
-  attendanceRate: number
+  totalSchedules: number;
+  attendedSchedules: number;
+  attendanceRate: number;
   crewStats: Array<{
-    crewId: string
-    crewName: string
-    attended: number
-    total: number
-    attendanceRate: number
-  }>
+    crewId: string;
+    crewName: string;
+    attended: number;
+    total: number;
+    attendanceRate: number;
+  }>;
 }
 
 export function useAttendanceQuery() {
-  return useQuery({
+  return useSuspenseQuery({
     queryKey: attendanceQueryKey,
     queryFn: async (): Promise<AttendanceStats> => {
-      const res = await fetch('/api/users/me/attendance')
-      if (!res.ok) throw new Error('출석 통계를 불러오는데 실패했습니다')
-      return res.json()
+      const res = await fetch("/api/users/me/attendance");
+      if (!res.ok) throw new Error("출석 통계를 불러오는데 실패했습니다");
+      return res.json();
     },
-    staleTime: 300_000,
-    gcTime: 900_000,
-  })
+    staleTime: CACHE_TIME.static,
+    gcTime: CACHE_TIME.gc,
+  });
 }

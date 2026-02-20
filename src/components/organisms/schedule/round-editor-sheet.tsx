@@ -6,10 +6,6 @@ import {
   MapPin,
   Users,
   AlignLeft,
-  Dumbbell,
-  Utensils,
-  PartyPopper,
-  MoreHorizontal,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,20 +23,9 @@ import {
 } from '@/components/ui/sheet'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { LocationSearch, type Place } from '@/components/location-search'
+import { ROUND_TYPE_CONFIG } from '@/lib/constants/round'
 import { cn } from '@/lib/utils'
-
-export type RoundType = 'exercise' | 'meal' | 'afterparty' | 'other'
-
-export interface PlaceInfo {
-  id: string
-  name: string
-  address: string
-  category?: string
-  phone?: string
-  x: string
-  y: string
-  url?: string
-}
+import type { RoundType, PlaceInfo } from '@/types/schedule.types'
 
 export interface RoundInput {
   roundNumber: number
@@ -65,13 +50,6 @@ interface RoundEditorSheetProps {
 const HOUR_OPTIONS = Array.from({ length: 22 }, (_, i) => i + 6)
 const MINUTE_OPTIONS = Array.from({ length: 12 }, (_, i) => i * 5)
 
-const ROUND_TYPE_CONFIG: Record<RoundType, { label: string; icon: typeof Dumbbell; defaultTitle: string }> = {
-  exercise: { label: '운동', icon: Dumbbell, defaultTitle: '운동' },
-  meal: { label: '식사', icon: Utensils, defaultTitle: '식사' },
-  afterparty: { label: '뒷풀이', icon: PartyPopper, defaultTitle: '뒷풀이' },
-  other: { label: '기타', icon: MoreHorizontal, defaultTitle: '' },
-}
-
 function parseTime(time: string): { hour: number; minute: number } {
   const [h, m] = time.split(':').map(Number)
   return { hour: h, minute: m }
@@ -88,10 +66,10 @@ export function RoundEditorSheet({
   roundIndex,
   onUpdateRound,
 }: RoundEditorSheetProps) {
-  const [startHourOpen, setStartHourOpen] = useState(false)
-  const [startMinuteOpen, setStartMinuteOpen] = useState(false)
-  const [endHourOpen, setEndHourOpen] = useState(false)
-  const [endMinuteOpen, setEndMinuteOpen] = useState(false)
+  const [isStartHourOpen, setIsStartHourOpen] = useState(false)
+  const [isStartMinuteOpen, setIsStartMinuteOpen] = useState(false)
+  const [isEndHourOpen, setIsEndHourOpen] = useState(false)
+  const [isEndMinuteOpen, setIsEndMinuteOpen] = useState(false)
 
   const startHour = round ? parseTime(round.startTime).hour : 19
   const startMinute = round ? parseTime(round.startTime).minute : 0
@@ -183,11 +161,12 @@ export function RoundEditorSheet({
 
           {round.type === 'other' && (
             <div className="rounded-2xl bg-muted/30 p-4">
-              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <label htmlFor="round-title" className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <AlignLeft className="h-4 w-4" />
                 제목
               </label>
               <Input
+                id="round-title"
                 placeholder="일정 제목을 입력하세요"
                 value={round.title}
                 onChange={(e) => handleUpdate({ title: e.target.value })}
@@ -204,7 +183,7 @@ export function RoundEditorSheet({
             </label>
             <div className="flex items-center justify-between gap-3">
               <div className="flex flex-1 items-center gap-1.5">
-                <Popover open={startHourOpen} onOpenChange={setStartHourOpen}>
+                <Popover open={isStartHourOpen} onOpenChange={setIsStartHourOpen}>
                   <PopoverTrigger asChild>
                     <button
                       type="button"
@@ -223,12 +202,12 @@ export function RoundEditorSheet({
                             tabIndex={0}
                             onClick={() => {
                               handleUpdate({ startTime: formatTimeValue(h, startMinute) })
-                              setStartHourOpen(false)
+                              setIsStartHourOpen(false)
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 handleUpdate({ startTime: formatTimeValue(h, startMinute) })
-                                setStartHourOpen(false)
+                                setIsStartHourOpen(false)
                               }
                             }}
                             className={cn(
@@ -243,7 +222,7 @@ export function RoundEditorSheet({
                     </ScrollArea>
                   </PopoverContent>
                 </Popover>
-                <Popover open={startMinuteOpen} onOpenChange={setStartMinuteOpen}>
+                <Popover open={isStartMinuteOpen} onOpenChange={setIsStartMinuteOpen}>
                   <PopoverTrigger asChild>
                     <button
                       type="button"
@@ -262,12 +241,12 @@ export function RoundEditorSheet({
                             tabIndex={0}
                             onClick={() => {
                               handleUpdate({ startTime: formatTimeValue(startHour, m) })
-                              setStartMinuteOpen(false)
+                              setIsStartMinuteOpen(false)
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 handleUpdate({ startTime: formatTimeValue(startHour, m) })
-                                setStartMinuteOpen(false)
+                                setIsStartMinuteOpen(false)
                               }
                             }}
                             className={cn(
@@ -287,7 +266,7 @@ export function RoundEditorSheet({
               <span className="text-muted-foreground">~</span>
 
               <div className="flex flex-1 items-center gap-1.5">
-                <Popover open={endHourOpen} onOpenChange={setEndHourOpen}>
+                <Popover open={isEndHourOpen} onOpenChange={setIsEndHourOpen}>
                   <PopoverTrigger asChild>
                     <button
                       type="button"
@@ -306,12 +285,12 @@ export function RoundEditorSheet({
                             tabIndex={0}
                             onClick={() => {
                               handleUpdate({ endTime: formatTimeValue(h, endMinute) })
-                              setEndHourOpen(false)
+                              setIsEndHourOpen(false)
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 handleUpdate({ endTime: formatTimeValue(h, endMinute) })
-                                setEndHourOpen(false)
+                                setIsEndHourOpen(false)
                               }
                             }}
                             className={cn(
@@ -326,7 +305,7 @@ export function RoundEditorSheet({
                     </ScrollArea>
                   </PopoverContent>
                 </Popover>
-                <Popover open={endMinuteOpen} onOpenChange={setEndMinuteOpen}>
+                <Popover open={isEndMinuteOpen} onOpenChange={setIsEndMinuteOpen}>
                   <PopoverTrigger asChild>
                     <button
                       type="button"
@@ -345,12 +324,12 @@ export function RoundEditorSheet({
                             tabIndex={0}
                             onClick={() => {
                               handleUpdate({ endTime: formatTimeValue(endHour, m) })
-                              setEndMinuteOpen(false)
+                              setIsEndMinuteOpen(false)
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 handleUpdate({ endTime: formatTimeValue(endHour, m) })
-                                setEndMinuteOpen(false)
+                                setIsEndMinuteOpen(false)
                               }
                             }}
                             className={cn(
@@ -370,11 +349,12 @@ export function RoundEditorSheet({
           </div>
 
           <div className="rounded-2xl bg-muted/30 p-4">
-            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <label htmlFor="round-location" className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <MapPin className="h-4 w-4" />
               장소
             </label>
             <LocationSearch
+              id="round-location"
               value={round.location}
               onChange={(value, place) =>
                 handleUpdate({
@@ -389,7 +369,7 @@ export function RoundEditorSheet({
 
           <div className="rounded-2xl bg-muted/30 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <label htmlFor="round-capacity" className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <Users className="h-4 w-4" />
                 정원
               </label>
@@ -406,6 +386,7 @@ export function RoundEditorSheet({
             {!round.isUnlimited && (
               <div className="flex items-center gap-3">
                 <Input
+                  id="round-capacity"
                   type="number"
                   min={1}
                   max={100}

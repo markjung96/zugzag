@@ -6,10 +6,6 @@ import {
   Users,
   UserCheck,
   UserX,
-  Dumbbell,
-  Utensils,
-  PartyPopper,
-  MoreHorizontal,
   ChevronDown,
   ChevronUp,
   Loader2,
@@ -26,10 +22,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { ROUND_TYPE_CONFIG } from '@/lib/constants/round'
 import { cn } from '@/lib/utils'
 import { formatTime } from '@/lib/utils/format-time'
-
-export type RoundType = 'exercise' | 'meal' | 'afterparty' | 'other'
+import type { RoundType } from '@/types/schedule.types'
 
 export interface Attendee {
   id: string
@@ -61,13 +57,6 @@ interface RoundCardProps {
   isLoading: boolean
   onRsvp: () => void
   onCancel: () => void
-}
-
-const ROUND_TYPE_CONFIG: Record<RoundType, { label: string; icon: typeof Dumbbell }> = {
-  exercise: { label: '운동', icon: Dumbbell },
-  meal: { label: '식사', icon: Utensils },
-  afterparty: { label: '뒷풀이', icon: PartyPopper },
-  other: { label: '기타', icon: MoreHorizontal },
 }
 
 export function RoundCard({

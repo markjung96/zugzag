@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,46 +23,43 @@ export function LoginForm({ redirectUrl = '/crews' }: LoginFormProps) {
     password: '',
   })
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault()
-      setIsLoading(true)
-      setError('')
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError('')
 
-      try {
-        const result = await signIn('credentials', {
-          email: formData.email,
-          password: formData.password,
-          redirect: false,
-        })
+    try {
+      const result = await signIn('credentials', {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      })
 
-        if (result?.error) {
-          setError('이메일 또는 비밀번호가 올바르지 않습니다')
-          setIsLoading(false)
-          return
-        }
-
-        router.push(redirectUrl)
-      } catch (error) {
-        console.error('Login error:', error)
-        setError('로그인 중 오류가 발생했습니다')
+      if (result?.error) {
+        setError('이메일 또는 비밀번호가 올바르지 않습니다')
         setIsLoading(false)
+        return
       }
-    },
-    [formData, router, redirectUrl]
-  )
 
-  const handleGoogleLogin = useCallback(() => {
+      router.push(redirectUrl)
+    } catch (error) {
+      console.error('Login error:', error)
+      setError('로그인 중 오류가 발생했습니다')
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = () => {
     signIn('google', { callbackUrl: redirectUrl })
-  }, [redirectUrl])
+  }
 
-  const handleKakaoLogin = useCallback(() => {
+  const handleKakaoLogin = () => {
     signIn('kakao', { callbackUrl: redirectUrl })
-  }, [redirectUrl])
+  }
 
-  const togglePassword = useCallback(() => {
+  const togglePassword = () => {
     setShowPassword((prev) => !prev)
-  }, [])
+  }
 
   return (
     <div className="rounded-2xl border border-border bg-card p-6 shadow-lg">

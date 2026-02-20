@@ -22,7 +22,7 @@ export function useDeleteCrewMutation() {
       queryClient.invalidateQueries({ queryKey: crewsQueryKey })
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error), { duration: Infinity })
+      toast.error(getErrorMessage(error), { duration: 4000 })
     },
   })
 }

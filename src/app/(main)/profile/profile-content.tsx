@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
-import { useSession, signOut } from 'next-auth/react'
-import { useTheme } from 'next-themes'
+import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
+import { useTheme } from "next-themes";
 import {
   User,
   Moon,
@@ -19,57 +19,45 @@ import {
   FileText,
   Pencil,
   Loader2,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from '@/components/ui/sheet'
-import { RefetchOverlay } from '@/components/ui/refetch-overlay'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useProfileStatsQuery } from '@/hooks/api/profile/use-profile-stats-query'
-import { useUpdateProfileMutation } from '@/hooks/api/profile/use-update-profile-mutation'
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
+import { RefetchOverlay } from "@/components/ui/refetch-overlay";
+import { useProfileStatsQuery } from "@/hooks/api/profile/use-profile-stats-query";
+import { useUpdateProfileMutation } from "@/hooks/api/profile/use-update-profile-mutation";
 
 export function ProfileContent() {
-  const { data: session, update: updateSession } = useSession()
-  const { theme, setTheme } = useTheme()
-  const [editSheetOpen, setEditSheetOpen] = useState(false)
-  const [editName, setEditName] = useState('')
+  const { data: stats, isFetching: fetchingStats } = useProfileStatsQuery();
+  const { theme, setTheme } = useTheme();
+  const { data: session, update: updateSession } = useSession();
 
-  const {
-    data: stats,
-    isLoading: loadingStats,
-    isFetching: fetchingStats,
-    isError: isErrorStats,
-    refetch: refetchStats,
-  } = useProfileStatsQuery()
-  const updateProfile = useUpdateProfileMutation()
+  const updateProfile = useUpdateProfileMutation();
+
+  const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
+  const [editName, setEditName] = useState("");
 
   const handleLogout = () => {
-    signOut({ callbackUrl: '/login' })
-  }
+    signOut({ callbackUrl: "/login" });
+  };
 
   const handleOpenEdit = () => {
-    setEditName(session?.user?.name || '')
-    setEditSheetOpen(true)
-  }
+    setEditName(session?.user?.name || "");
+    setIsEditSheetOpen(true);
+  };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const trimmedName = editName.trim()
-    if (trimmedName.length < 1 || trimmedName.length > 50) return
+    e.preventDefault();
+    const trimmedName = editName.trim();
+    if (trimmedName.length < 1 || trimmedName.length > 50) return;
     updateProfile.mutate(trimmedName, {
       onSuccess: async () => {
-        await updateSession({ name: trimmedName })
-        setEditSheetOpen(false)
+        await updateSession({ name: trimmedName });
+        setIsEditSheetOpen(false);
       },
-    })
-  }
+    });
+  };
 
   return (
     <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
@@ -99,7 +87,7 @@ export function ProfileContent() {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold">{session?.user?.name || '사용자'}</h2>
+              <h2 className="text-xl font-bold">{session?.user?.name || "사용자"}</h2>
               <button
                 onClick={handleOpenEdit}
                 className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
@@ -112,31 +100,7 @@ export function ProfileContent() {
           </div>
         </div>
 
-        {loadingStats ? (
-          <div className="grid grid-cols-3 gap-3">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="flex flex-col items-center rounded-2xl border border-border bg-card p-4"
-              >
-                <Skeleton className="mb-2 h-11 w-11 rounded-xl" />
-                <Skeleton className="mb-1 h-8 w-12" />
-                <Skeleton className="h-3 w-16" />
-              </div>
-            ))}
-          </div>
-        ) : isErrorStats ? (
-          <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4 text-center">
-            <p className="text-sm text-muted-foreground">통계를 불러올 수 없습니다</p>
-            <button
-              onClick={() => refetchStats()}
-              className="mt-2 text-sm text-primary underline"
-            >
-              다시 시도
-            </button>
-          </div>
-        ) : (
-          <RefetchOverlay isFetching={fetchingStats}>
+        <RefetchOverlay isFetching={fetchingStats}>
           <div className="grid grid-cols-3 gap-3">
             <StatCard
               label="소속 크루"
@@ -158,8 +122,7 @@ export function ProfileContent() {
               color="bg-warning/10 text-warning"
             />
           </div>
-          </RefetchOverlay>
-        )}
+        </RefetchOverlay>
 
         <section>
           <div className="mb-3 flex items-center gap-2 px-1">
@@ -169,12 +132,12 @@ export function ProfileContent() {
 
           <div className="overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-primary/30">
             <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="flex w-full items-center justify-between p-4 transition-colors hover:bg-accent/50 active:bg-accent"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                  {theme === 'dark' ? (
+                  {theme === "dark" ? (
                     <Moon className="h-5 w-5 text-primary" />
                   ) : (
                     <Sun className="h-5 w-5 text-primary" />
@@ -183,7 +146,7 @@ export function ProfileContent() {
                 <span className="font-medium">테마</span>
               </div>
               <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium text-muted-foreground">
-                {theme === 'dark' ? '다크 모드' : '라이트 모드'}
+                {theme === "dark" ? "다크 모드" : "라이트 모드"}
               </span>
             </button>
           </div>
@@ -196,25 +159,11 @@ export function ProfileContent() {
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-primary/30">
-            <MenuItem
-              icon={<Info className="h-5 w-5" />}
-              label="앱 정보"
-              value="v1.0.0"
-            />
+            <MenuItem icon={<Info className="h-5 w-5" />} label="앱 정보" value="v1.0.0" />
             <div className="mx-4 border-t border-border/50" />
-            <MenuItem
-              icon={<FileText className="h-5 w-5" />}
-              label="이용약관"
-              href="/terms"
-              showChevron
-            />
+            <MenuItem icon={<FileText className="h-5 w-5" />} label="이용약관" href="/terms" showChevron />
             <div className="mx-4 border-t border-border/50" />
-            <MenuItem
-              icon={<Shield className="h-5 w-5" />}
-              label="개인정보처리방침"
-              href="/privacy"
-              showChevron
-            />
+            <MenuItem icon={<Shield className="h-5 w-5" />} label="개인정보처리방침" href="/privacy" showChevron />
           </div>
         </section>
 
@@ -237,7 +186,7 @@ export function ProfileContent() {
         </section>
       </div>
 
-      <Sheet open={editSheetOpen} onOpenChange={setEditSheetOpen}>
+      <Sheet open={isEditSheetOpen} onOpenChange={setIsEditSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl pb-safe">
           <SheetHeader>
             <SheetTitle>프로필 수정</SheetTitle>
@@ -266,7 +215,7 @@ export function ProfileContent() {
                 type="button"
                 variant="outline"
                 className="flex-1"
-                onClick={() => setEditSheetOpen(false)}
+                onClick={() => setIsEditSheetOpen(false)}
                 disabled={updateProfile.isPending}
               >
                 취소
@@ -274,11 +223,7 @@ export function ProfileContent() {
               <Button
                 type="submit"
                 className="flex-1"
-                disabled={
-                  updateProfile.isPending ||
-                  editName.trim().length < 1 ||
-                  editName.trim().length > 50
-                }
+                disabled={updateProfile.isPending || editName.trim().length < 1 || editName.trim().length > 50}
               >
                 {updateProfile.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 저장
@@ -288,7 +233,7 @@ export function ProfileContent() {
         </SheetContent>
       </Sheet>
     </div>
-  )
+  );
 }
 
 function StatCard({
@@ -298,21 +243,22 @@ function StatCard({
   icon,
   color,
 }: {
-  label: string
-  value: number
-  suffix?: string
-  icon: React.ReactNode
-  color: string
+  label: string;
+  value: number;
+  suffix?: string;
+  icon: React.ReactNode;
+  color: string;
 }) {
   return (
     <div className="flex flex-col items-center rounded-2xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:shadow-md hover:shadow-primary/5">
-      <div className={`mb-2 flex h-11 w-11 items-center justify-center rounded-xl ${color}`}>
-        {icon}
-      </div>
-      <span className="text-2xl font-bold">{value}{suffix}</span>
+      <div className={`mb-2 flex h-11 w-11 items-center justify-center rounded-xl ${color}`}>{icon}</div>
+      <span className="text-2xl font-bold">
+        {value}
+        {suffix}
+      </span>
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
     </div>
-  )
+  );
 }
 
 function MenuItem({
@@ -322,14 +268,14 @@ function MenuItem({
   href,
   showChevron,
 }: {
-  icon: React.ReactNode
-  label: string
-  value?: string
-  href?: string
-  showChevron?: boolean
+  icon: React.ReactNode;
+  label: string;
+  value?: string;
+  href?: string;
+  showChevron?: boolean;
 }) {
   const className =
-    'group flex w-full items-center justify-between p-4 transition-colors hover:bg-accent/50 active:bg-accent'
+    "group flex w-full items-center justify-between p-4 transition-colors hover:bg-accent/50 active:bg-accent";
   return href ? (
     <Link href={href} className={className}>
       <div className="flex items-center gap-3">
@@ -339,9 +285,7 @@ function MenuItem({
         <span className="font-medium">{label}</span>
       </div>
       {value && (
-        <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium text-muted-foreground">
-          {value}
-        </span>
+        <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium text-muted-foreground">{value}</span>
       )}
       {showChevron && (
         <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
@@ -356,13 +300,11 @@ function MenuItem({
         <span className="font-medium">{label}</span>
       </div>
       {value && (
-        <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium text-muted-foreground">
-          {value}
-        </span>
+        <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium text-muted-foreground">{value}</span>
       )}
       {showChevron && (
         <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
       )}
     </button>
-  )
+  );
 }

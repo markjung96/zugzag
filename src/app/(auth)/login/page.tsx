@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Mail, Lock, Eye, EyeOff, Mountain, Loader2 } from "lucide-react"
@@ -37,46 +37,43 @@ export default function LoginPage() {
     setError(messages[errorParam] || messages.Default)
   }, [searchParams])
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault()
-      setIsLoading(true)
-      setError("")
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError("")
 
-      try {
-        const result = await signIn("credentials", {
-          email: formData.email,
-          password: formData.password,
-          redirect: false,
-        })
+    try {
+      const result = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      })
 
-        if (result?.error) {
-          setError("이메일 또는 비밀번호가 올바르지 않습니다")
-          setIsLoading(false)
-          return
-        }
-
-        router.push("/crews")
-      } catch (err) {
-        console.error("Login error:", err)
-        setError(getErrorMessage(err))
+      if (result?.error) {
+        setError("이메일 또는 비밀번호가 올바르지 않습니다")
         setIsLoading(false)
+        return
       }
-    },
-    [formData, router]
-  )
 
-  const handleGoogleLogin = useCallback(() => {
+      router.push("/crews")
+    } catch (err) {
+      console.error("Login error:", err)
+      setError(getErrorMessage(err))
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = () => {
     signIn("google", { callbackUrl: "/crews" })
-  }, [])
+  }
 
-  const handleKakaoLogin = useCallback(() => {
+  const handleKakaoLogin = () => {
     signIn("kakao", { callbackUrl: "/crews" })
-  }, [])
+  }
 
-  const togglePassword = useCallback(() => {
+  const togglePassword = () => {
     setShowPassword((prev) => !prev)
-  }, [])
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 py-12 pb-safe">

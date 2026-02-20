@@ -1,47 +1,44 @@
-'use client'
+"use client";
 
-import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
-import { useState, useCallback } from 'react'
-import { ArrowLeft, Loader2, UserPlus, Ticket } from 'lucide-react'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { useJoinCrewMutation } from '@/hooks/api/crews/use-join-crew-mutation'
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { ArrowLeft, Loader2, UserPlus, Ticket } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useJoinCrewMutation } from "@/hooks/api/crews/use-join-crew-mutation";
 
 export function JoinCrewContent() {
-  const router = useRouter()
+  const router = useRouter();
 
-  const [inviteCode, setInviteCode] = useState('')
+  const mutation = useJoinCrewMutation();
 
-  const mutation = useJoinCrewMutation()
+  const [inviteCode, setInviteCode] = useState("");
 
-  const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault()
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
 
-      const code = inviteCode.trim().toUpperCase()
-      if (code.length !== 6) {
-        return
-      }
+    const code = inviteCode.trim().toUpperCase();
+    if (code.length !== 6) {
+      return;
+    }
 
-      mutation.mutate(code, {
-        onSuccess: (crew) => {
-          toast.success('크루에 가입되었습니다')
-          router.push(`/crews/${crew.id}`)
-        },
-      })
-    },
-    [inviteCode, mutation, router]
-  )
+    mutation.mutate(code, {
+      onSuccess: (crew) => {
+        toast.success("크루에 가입되었습니다");
+        router.push(`/crews/${crew.id}`);
+      },
+    });
+  };
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
-    setInviteCode(value)
-  }, [])
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    setInviteCode(value);
+  };
 
-  const isValid = inviteCode.length === 6
+  const isValid = inviteCode.length === 6;
 
   return (
     <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
@@ -63,9 +60,7 @@ export function JoinCrewContent() {
           <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
             <UserPlus className="h-8 w-8 text-primary" />
           </div>
-          <p className="text-center text-sm text-muted-foreground">
-            초대 코드를 입력하여 크루에 가입하세요
-          </p>
+          <p className="text-center text-sm text-muted-foreground">초대 코드를 입력하여 크루에 가입하세요</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -90,15 +85,13 @@ export function JoinCrewContent() {
             />
             <p className="text-center text-xs text-muted-foreground">
               {inviteCode.length > 0 && inviteCode.length < 6
-                ? '6자리 초대 코드를 입력해주세요'
-                : '6자리 영문/숫자 코드'}
+                ? "6자리 초대 코드를 입력해주세요"
+                : "6자리 영문/숫자 코드"}
             </p>
           </div>
 
           {mutation.isError && (
-            <div className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive">
-              {mutation.error.message}
-            </div>
+            <div className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive">{mutation.error.message}</div>
           )}
 
           <Button
@@ -132,5 +125,5 @@ export function JoinCrewContent() {
         </div>
       </div>
     </div>
-  )
+  );
 }

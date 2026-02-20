@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { MapPin, Search, Loader2, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -19,6 +19,7 @@ export type Place = {
 }
 
 type LocationSearchProps = {
+  id?: string
   value: string
   onChange: (value: string, place?: Place) => void
   placeholder?: string
@@ -53,6 +54,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export function LocationSearch({
+  id,
   value,
   onChange,
   placeholder = "장소를 검색하세요",
@@ -93,14 +95,11 @@ export function LocationSearch({
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  const handleSelect = useCallback(
-    (place: Place) => {
-      setInputValue(place.name)
-      onChange(place.name, place)
-      setIsOpen(false)
-    },
-    [onChange]
-  )
+  const handleSelect = (place: Place) => {
+    setInputValue(place.name)
+    onChange(place.name, place)
+    setIsOpen(false)
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value
@@ -146,6 +145,7 @@ export function LocationSearch({
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
+          id={id}
           ref={inputRef}
           type="text"
           value={inputValue}

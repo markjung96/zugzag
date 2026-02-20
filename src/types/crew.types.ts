@@ -1,3 +1,5 @@
+export type Role = 'leader' | 'admin' | 'member'
+
 export interface Crew {
   id: string
   name: string
@@ -13,7 +15,7 @@ export interface CrewDetail {
   description: string | null
   leaderId: string
   memberCount: number
-  myRole: 'leader' | 'admin' | 'member'
+  myRole: Role
   canManage: boolean
   inviteCode?: string
 }
@@ -24,6 +26,6 @@ export interface CrewMember {
   name: string
   email: string
   image: string | null
-  role: 'leader' | 'admin' | 'member'
+  role: Role
   joinedAt: string
 }

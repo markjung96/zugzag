@@ -1,49 +1,46 @@
-'use client'
+"use client";
 
-import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
-import { useState, useCallback } from 'react'
-import { ArrowLeft, Loader2, Users } from 'lucide-react'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { useCreateCrewMutation } from '@/hooks/api/crews/use-create-crew-mutation'
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { ArrowLeft, Loader2, Users } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useCreateCrewMutation } from "@/hooks/api/crews/use-create-crew-mutation";
 
 export function NewCrewContent() {
-  const router = useRouter()
+  const router = useRouter();
 
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
+  const mutation = useCreateCrewMutation();
 
-  const mutation = useCreateCrewMutation()
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
 
-  const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault()
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
 
-      if (!name.trim()) {
-        return
-      }
+    if (!name.trim()) {
+      return;
+    }
 
-      mutation.mutate(
-        {
-          name: name.trim(),
-          description: description.trim() || undefined,
+    mutation.mutate(
+      {
+        name: name.trim(),
+        description: description.trim() || undefined,
+      },
+      {
+        onSuccess: (crew) => {
+          toast.success("크루가 생성되었습니다");
+          router.push(`/crews/${crew.id}`);
         },
-        {
-          onSuccess: (crew) => {
-            toast.success('크루가 생성되었습니다')
-            router.push(`/crews/${crew.id}`)
-          },
-        }
-      )
-    },
-    [name, description, mutation, router]
-  )
+      },
+    );
+  };
 
-  const isValid = name.trim().length > 0
+  const isValid = name.trim().length > 0;
 
   return (
     <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
@@ -65,9 +62,7 @@ export function NewCrewContent() {
           <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
             <Users className="h-8 w-8 text-primary" />
           </div>
-          <p className="text-center text-sm text-muted-foreground">
-            새로운 클라이밍 크루를 만들어보세요
-          </p>
+          <p className="text-center text-sm text-muted-foreground">새로운 클라이밍 크루를 만들어보세요</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -86,9 +81,7 @@ export function NewCrewContent() {
               required
               className="h-12 rounded-xl border-input bg-background text-base"
             />
-            <p className="text-right text-xs text-muted-foreground">
-              {name.length}/50자
-            </p>
+            <p className="text-right text-xs text-muted-foreground">{name.length}/50자</p>
           </div>
 
           <div className="space-y-2">
@@ -105,15 +98,11 @@ export function NewCrewContent() {
               disabled={mutation.isPending}
               className="rounded-xl border-input bg-background text-base"
             />
-            <p className="text-right text-xs text-muted-foreground">
-              {description.length}/500자
-            </p>
+            <p className="text-right text-xs text-muted-foreground">{description.length}/500자</p>
           </div>
 
           {mutation.isError && (
-            <div className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive">
-              {mutation.error.message}
-            </div>
+            <div className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive">{mutation.error.message}</div>
           )}
 
           <Button
@@ -147,5 +136,5 @@ export function NewCrewContent() {
         </div>
       </div>
     </div>
-  )
+  );
 }

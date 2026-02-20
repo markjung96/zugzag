@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import Image from "next/image"
-import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import Image from "next/image";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Calendar,
@@ -14,25 +14,20 @@ import {
   UserX,
   Trash2,
   MoreVertical,
-  Dumbbell,
-  Utensils,
-  PartyPopper,
-  MoreHorizontal,
   ChevronDown,
   ChevronUp,
   Pencil,
   Loader2,
-} from "lucide-react"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,122 +38,110 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { cn } from "@/lib/utils"
-import { toast } from "sonner"
-import { getErrorMessage } from "@/lib/utils/get-error-message"
-import { scheduleQueryKey } from "@/hooks/api/schedules/use-schedule-query"
-import { schedulesQueryKey } from "@/hooks/api/schedules/use-schedules-query"
-import { crewSchedulesQueryKey } from "@/hooks/api/crews/use-crew-schedules-query"
-
-type RoundType = "exercise" | "meal" | "afterparty" | "other"
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils/get-error-message";
+import { scheduleQueryKey } from "@/hooks/api/schedules/use-schedule-query";
+import { schedulesQueryKey } from "@/hooks/api/schedules/use-schedules-query";
+import { crewSchedulesQueryKey } from "@/hooks/api/crews/use-crew-schedules-query";
+import { ROUND_TYPE_CONFIG } from "@/lib/constants/round";
+import type { RoundType } from "@/types/schedule.types";
 
 type Attendee = {
-  id: string
-  userId: string
-  name: string
-  image: string | null
-}
+  id: string;
+  userId: string;
+  name: string;
+  image: string | null;
+};
 
 type Round = {
-  id: string
-  roundNumber: number
-  type: RoundType
-  title: string
-  startTime: string
-  endTime: string
-  location: string
-  capacity: number
-  attendingCount: number
-  waitingCount: number
-  myStatus: "attending" | "waiting" | null
-  attendees: Attendee[]
-  waitlist: Attendee[]
-}
+  id: string;
+  roundNumber: number;
+  type: RoundType;
+  title: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  capacity: number;
+  attendingCount: number;
+  waitingCount: number;
+  myStatus: "attending" | "waiting" | null;
+  attendees: Attendee[];
+  waitlist: Attendee[];
+};
 
 type ScheduleDetail = {
-  id: string
-  title: string
-  date: string
-  description: string | null
-  crewId: string
-  crewName: string
-  canManage: boolean
-  rounds: Round[]
-}
-
-const ROUND_TYPE_CONFIG: Record<RoundType, { label: string; icon: typeof Dumbbell }> = {
-  exercise: { label: "운동", icon: Dumbbell },
-  meal: { label: "식사", icon: Utensils },
-  afterparty: { label: "뒷풀이", icon: PartyPopper },
-  other: { label: "기타", icon: MoreHorizontal },
-}
+  id: string;
+  title: string;
+  date: string;
+  description: string | null;
+  crewId: string;
+  crewName: string;
+  canManage: boolean;
+  rounds: Round[];
+};
 
 async function fetchSchedule(scheduleId: string): Promise<ScheduleDetail> {
-  const res = await fetch(`/api/schedules/${scheduleId}`)
-  if (!res.ok) throw new Error("Failed to fetch schedule")
-  return res.json()
+  const res = await fetch(`/api/schedules/${scheduleId}`);
+  if (!res.ok) throw new Error("Failed to fetch schedule");
+  return res.json();
 }
 
 async function createRsvp(roundId: string) {
   const res = await fetch(`/api/rounds/${roundId}/rsvp`, {
     method: "POST",
-  })
+  });
   if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { error?: string }
-    throw new Error(data.error || "Failed to create RSVP")
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error || "Failed to create RSVP");
   }
-  return res.json()
+  return res.json();
 }
 
 async function deleteRsvp(roundId: string) {
   const res = await fetch(`/api/rounds/${roundId}/rsvp`, {
     method: "DELETE",
-  })
+  });
   if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { error?: string }
-    throw new Error(data.error || "Failed to delete RSVP")
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error || "Failed to delete RSVP");
   }
-  return res.json()
+  return res.json();
 }
 
 async function deleteSchedule(scheduleId: string) {
   const res = await fetch(`/api/schedules/${scheduleId}`, {
     method: "DELETE",
-  })
+  });
   if (!res.ok) {
-    const data = (await res.json().catch(() => ({}))) as { error?: string }
-    throw new Error(data.error || "Failed to delete schedule")
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error || "Failed to delete schedule");
   }
-  return res.json()
+  return res.json();
 }
 
 export function ScheduleDetailContent() {
-  const params = useParams()
-  const router = useRouter()
-  const queryClient = useQueryClient()
+  const { id: crewId, scheduleId } = useParams<{ id: string; scheduleId: string }>();
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const crewId = params.id as string
-  const scheduleId = params.scheduleId as string
-
-  const [expandedRounds, setExpandedRounds] = useState<Set<string>>(new Set())
-
-  const { data: schedule, isLoading, error } = useQuery({
+  const { data: schedule } = useSuspenseQuery({
     queryKey: scheduleQueryKey(scheduleId),
     queryFn: () => fetchSchedule(scheduleId),
-  })
+  });
 
   const rsvpMutation = useMutation({
     mutationFn: createRsvp,
     onMutate: async (roundId) => {
-      await queryClient.cancelQueries({ queryKey: scheduleQueryKey(scheduleId) })
+      await queryClient.cancelQueries({ queryKey: scheduleQueryKey(scheduleId) });
 
-      const previousData = queryClient.getQueryData<ScheduleDetail>(scheduleQueryKey(scheduleId))
+      const previousData = queryClient.getQueryData<ScheduleDetail>(scheduleQueryKey(scheduleId));
 
       if (previousData) {
-        const targetRound = previousData.rounds.find((r) => r.id === roundId)
-        const isUnlimited = targetRound?.capacity === 0
-        const isFull = !isUnlimited && targetRound && targetRound.attendingCount >= targetRound.capacity
+        const targetRound = previousData.rounds.find((r) => r.id === roundId);
+        const isUnlimited = targetRound?.capacity === 0;
+        const isFull = !isUnlimited && targetRound && targetRound.attendingCount >= targetRound.capacity;
 
         queryClient.setQueryData<ScheduleDetail>(scheduleQueryKey(scheduleId), {
           ...previousData,
@@ -170,39 +153,39 @@ export function ScheduleDetailContent() {
                   attendingCount: isFull ? round.attendingCount : round.attendingCount + 1,
                   waitingCount: isFull ? round.waitingCount + 1 : round.waitingCount,
                 }
-              : round
+              : round,
           ),
-        })
+        });
       }
 
-      return { previousData }
+      return { previousData };
     },
     onError: (err, _roundId, context) => {
       if (context?.previousData) {
-        queryClient.setQueryData(scheduleQueryKey(scheduleId), context.previousData)
+        queryClient.setQueryData(scheduleQueryKey(scheduleId), context.previousData);
       }
-      toast.error(getErrorMessage(err), { duration: 4000 })
+      toast.error(getErrorMessage(err), { duration: 4000 });
     },
     onSuccess: () => {
-      toast.success('참석이 등록되었습니다')
+      toast.success("참석이 등록되었습니다");
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: scheduleQueryKey(scheduleId) })
-      queryClient.invalidateQueries({ queryKey: schedulesQueryKey() })
-      queryClient.invalidateQueries({ queryKey: crewSchedulesQueryKey(crewId) })
+      queryClient.invalidateQueries({ queryKey: scheduleQueryKey(scheduleId) });
+      queryClient.invalidateQueries({ queryKey: schedulesQueryKey() });
+      queryClient.invalidateQueries({ queryKey: crewSchedulesQueryKey(crewId) });
     },
-  })
+  });
 
   const cancelMutation = useMutation({
     mutationFn: deleteRsvp,
     onMutate: async (roundId) => {
-      await queryClient.cancelQueries({ queryKey: scheduleQueryKey(scheduleId) })
+      await queryClient.cancelQueries({ queryKey: scheduleQueryKey(scheduleId) });
 
-      const previousData = queryClient.getQueryData<ScheduleDetail>(scheduleQueryKey(scheduleId))
+      const previousData = queryClient.getQueryData<ScheduleDetail>(scheduleQueryKey(scheduleId));
 
       if (previousData) {
-        const targetRound = previousData.rounds.find((r) => r.id === roundId)
-        const wasWaiting = targetRound?.myStatus === "waiting"
+        const targetRound = previousData.rounds.find((r) => r.id === roundId);
+        const wasWaiting = targetRound?.myStatus === "waiting";
 
         queryClient.setQueryData<ScheduleDetail>(scheduleQueryKey(scheduleId), {
           ...previousData,
@@ -214,61 +197,55 @@ export function ScheduleDetailContent() {
                   attendingCount: wasWaiting ? round.attendingCount : Math.max(0, round.attendingCount - 1),
                   waitingCount: wasWaiting ? Math.max(0, round.waitingCount - 1) : round.waitingCount,
                 }
-              : round
+              : round,
           ),
-        })
+        });
       }
 
-      return { previousData }
+      return { previousData };
     },
     onError: (err, _roundId, context) => {
       if (context?.previousData) {
-        queryClient.setQueryData(scheduleQueryKey(scheduleId), context.previousData)
+        queryClient.setQueryData(scheduleQueryKey(scheduleId), context.previousData);
       }
-      toast.error(getErrorMessage(err), { duration: 4000 })
+      toast.error(getErrorMessage(err), { duration: 4000 });
     },
     onSuccess: () => {
-      toast.success('참석이 취소되었습니다')
+      toast.success("참석이 취소되었습니다");
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: scheduleQueryKey(scheduleId) })
-      queryClient.invalidateQueries({ queryKey: schedulesQueryKey() })
-      queryClient.invalidateQueries({ queryKey: crewSchedulesQueryKey(crewId) })
+      queryClient.invalidateQueries({ queryKey: scheduleQueryKey(scheduleId) });
+      queryClient.invalidateQueries({ queryKey: schedulesQueryKey() });
+      queryClient.invalidateQueries({ queryKey: crewSchedulesQueryKey(crewId) });
     },
-  })
+  });
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteSchedule(scheduleId),
     onError: (error) => {
-      toast.error(getErrorMessage(error), { duration: 4000 })
+      toast.error(getErrorMessage(error), { duration: 4000 });
     },
     onSuccess: () => {
-      toast.success('일정이 삭제되었습니다')
-      queryClient.invalidateQueries({ queryKey: schedulesQueryKey() })
-      queryClient.invalidateQueries({ queryKey: crewSchedulesQueryKey(crewId) })
-      router.push(`/crews/${crewId}`)
+      toast.success("일정이 삭제되었습니다");
+      queryClient.invalidateQueries({ queryKey: schedulesQueryKey() });
+      queryClient.invalidateQueries({ queryKey: crewSchedulesQueryKey(crewId) });
+      router.push(`/crews/${crewId}`);
     },
-  })
+  });
+
+  const [expandedRounds, setExpandedRounds] = useState<Set<string>>(new Set());
 
   const toggleExpand = (roundId: string) => {
     setExpandedRounds((prev) => {
-      const next = new Set(prev)
+      const next = new Set(prev);
       if (next.has(roundId)) {
-        next.delete(roundId)
+        next.delete(roundId);
       } else {
-        next.add(roundId)
+        next.add(roundId);
       }
-      return next
-    })
-  }
-
-  if (isLoading) {
-    return <LoadingState crewId={crewId} />
-  }
-
-  if (error || !schedule) {
-    return <ErrorState crewId={crewId} />
-  }
+      return next;
+    });
+  };
 
   return (
     <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
@@ -288,11 +265,7 @@ export function ScheduleDetailContent() {
             <AlertDialog>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 rounded-xl"
-                  >
+                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl">
                     <MoreVertical className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -346,9 +319,7 @@ export function ScheduleDetailContent() {
 
           <h2 className="mb-2 text-xl font-bold">{schedule.title}</h2>
 
-          {schedule.description && (
-            <p className="text-sm text-muted-foreground">{schedule.description}</p>
-          )}
+          {schedule.description && <p className="text-sm text-muted-foreground">{schedule.description}</p>}
 
           {schedule.rounds.length > 1 && (
             <div className="mt-3 flex items-center gap-1">
@@ -374,7 +345,7 @@ export function ScheduleDetailContent() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function RoundCard({
@@ -385,32 +356,32 @@ function RoundCard({
   onRsvp,
   onCancel,
 }: {
-  round: Round
-  isExpanded: boolean
-  onToggleExpand: () => void
-  isLoading: boolean
-  onRsvp: () => void
-  onCancel: () => void
+  round: Round;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  isLoading: boolean;
+  onRsvp: () => void;
+  onCancel: () => void;
 }) {
-  const [isWaitlistDialogOpen, setIsWaitlistDialogOpen] = useState(false)
-  const config = ROUND_TYPE_CONFIG[round.type]
-  const Icon = config.icon
-  const isUnlimited = round.capacity === 0
-  const isFull = !isUnlimited && round.attendingCount >= round.capacity
-  const progressValue = isUnlimited ? 0 : (round.attendingCount / round.capacity) * 100
+  const [isWaitlistDialogOpen, setIsWaitlistDialogOpen] = useState(false);
+  const config = ROUND_TYPE_CONFIG[round.type];
+  const Icon = config.icon;
+  const isUnlimited = round.capacity === 0;
+  const isFull = !isUnlimited && round.attendingCount >= round.capacity;
+  const progressValue = isUnlimited ? 0 : (round.attendingCount / round.capacity) * 100;
 
   const handleRsvpClick = () => {
     if (isFull && !isUnlimited) {
-      setIsWaitlistDialogOpen(true)
+      setIsWaitlistDialogOpen(true);
     } else {
-      onRsvp()
+      onRsvp();
     }
-  }
+  };
 
   const handleWaitlistConfirm = () => {
-    onRsvp()
-    setIsWaitlistDialogOpen(false)
-  }
+    onRsvp();
+    setIsWaitlistDialogOpen(false);
+  };
 
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden">
@@ -430,14 +401,10 @@ function RoundCard({
             </div>
           </div>
           {round.myStatus === "attending" && (
-            <span className="rounded-md bg-success/10 px-2 py-0.5 text-xs font-semibold text-success">
-              참석
-            </span>
+            <span className="rounded-md bg-success/10 px-2 py-0.5 text-xs font-semibold text-success">참석</span>
           )}
           {round.myStatus === "waiting" && (
-            <span className="rounded-md bg-warning/10 px-2 py-0.5 text-xs font-semibold text-warning">
-              대기
-            </span>
+            <span className="rounded-md bg-warning/10 px-2 py-0.5 text-xs font-semibold text-warning">대기</span>
           )}
         </div>
 
@@ -453,16 +420,12 @@ function RoundCard({
               <span className="font-medium">참석 현황</span>
             </div>
             <span className={cn("font-semibold", isFull && "text-destructive")}>
-              {isUnlimited
-                ? `${round.attendingCount}명`
-                : `${round.attendingCount} / ${round.capacity}명`}
+              {isUnlimited ? `${round.attendingCount}명` : `${round.attendingCount} / ${round.capacity}명`}
             </span>
           </div>
           {!isUnlimited && <Progress value={progressValue} className="h-2" />}
           {!isUnlimited && round.waitingCount > 0 && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              대기 {round.waitingCount}명
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">대기 {round.waitingCount}명</p>
           )}
         </div>
 
@@ -527,9 +490,7 @@ function RoundCard({
 
               {round.waitlist.length > 0 && (
                 <div>
-                  <h4 className="mb-2 text-xs font-semibold text-muted-foreground">
-                    대기자 ({round.waitlist.length})
-                  </h4>
+                  <h4 className="mb-2 text-xs font-semibold text-muted-foreground">대기자 ({round.waitlist.length})</h4>
                   <div className="space-y-2">
                     {round.waitlist.map((attendee) => (
                       <AttendeeItem key={attendee.id} attendee={attendee} isWaiting />
@@ -560,16 +521,10 @@ function RoundCard({
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }
 
-function AttendeeItem({
-  attendee,
-  isWaiting,
-}: {
-  attendee: Attendee
-  isWaiting?: boolean
-}) {
+function AttendeeItem({ attendee, isWaiting }: { attendee: Attendee; isWaiting?: boolean }) {
   return (
     <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-2">
       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary overflow-hidden">
@@ -586,77 +541,37 @@ function AttendeeItem({
         )}
       </div>
       <span className="flex-1 text-sm font-medium">{attendee.name}</span>
-      {isWaiting && (
-        <span className="rounded-md bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
-          대기
-        </span>
-      )}
+      {isWaiting && <span className="rounded-md bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">대기</span>}
     </div>
-  )
+  );
 }
 
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  const today = new Date()
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
+  const date = new Date(dateStr);
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const isToday = dateStr === today.toISOString().split("T")[0]
-  const isTomorrow = dateStr === tomorrow.toISOString().split("T")[0]
+  const isToday = dateStr === today.toISOString().split("T")[0];
+  const isTomorrow = dateStr === tomorrow.toISOString().split("T")[0];
 
-  if (isToday) return "오늘"
-  if (isTomorrow) return "내일"
+  if (isToday) return "오늘";
+  if (isTomorrow) return "내일";
 
-  const month = date.getMonth() + 1
-  const day = date.getDate()
-  const weekdays = ["일", "월", "화", "수", "목", "금", "토"]
-  const weekday = weekdays[date.getDay()]
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+  const weekday = weekdays[date.getDay()];
 
-  return `${month}/${day} (${weekday})`
+  return `${month}/${day} (${weekday})`;
 }
 
 function formatTime(timeStr: string): string {
-  const [hours, minutes] = timeStr.split(":")
-  const hour = parseInt(hours, 10)
-  const ampm = hour >= 12 ? "오후" : "오전"
-  const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour
-  return `${ampm} ${displayHour}:${minutes}`
-}
-
-function LoadingState({ crewId }: { crewId: string }) {
-  return (
-    <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-sm">
-        <div className="flex h-14 items-center px-4">
-          <Link
-            href={`/crews/${crewId}`}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <Skeleton className="ml-2 h-5 w-20 rounded-lg" />
-        </div>
-      </header>
-      <div className="flex flex-1 flex-col px-4 py-5">
-        <Skeleton className="h-20 w-full rounded-2xl" />
-        <div className="mt-4 space-y-4">
-          {[1, 2].map((i) => (
-            <div key={i} className="rounded-2xl border border-border p-4 space-y-3">
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-10 w-10 rounded-xl" />
-                <div className="space-y-2">
-                  <Skeleton className="h-5 w-32" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-              </div>
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-10 w-full rounded-xl" />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
+  const [hours, minutes] = timeStr.split(":");
+  const hour = parseInt(hours, 10);
+  const ampm = hour >= 12 ? "오후" : "오전";
+  const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+  return `${ampm} ${displayHour}:${minutes}`;
 }
 
 function ErrorState({ crewId }: { crewId: string }) {
@@ -678,21 +593,13 @@ function ErrorState({ crewId }: { crewId: string }) {
           <Calendar className="h-10 w-10 text-destructive" />
         </div>
         <div className="text-center">
-          <p className="mb-1 text-sm font-semibold text-destructive">
-            일정을 불러올 수 없습니다
-          </p>
-          <p className="text-xs text-muted-foreground">
-            일정을 찾을 수 없거나 권한이 없습니다
-          </p>
+          <p className="mb-1 text-sm font-semibold text-destructive">일정을 불러올 수 없습니다</p>
+          <p className="text-xs text-muted-foreground">일정을 찾을 수 없거나 권한이 없습니다</p>
         </div>
-        <Button
-          size="sm"
-          onClick={() => window.location.reload()}
-          className="rounded-xl"
-        >
+        <Button size="sm" onClick={() => window.location.reload()} className="rounded-xl">
           다시 시도
         </Button>
       </div>
     </div>
-  )
+  );
 }

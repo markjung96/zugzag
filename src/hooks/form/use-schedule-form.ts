@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-
-export type RoundType = 'exercise' | 'meal' | 'afterparty' | 'other'
+import type { RoundType } from '@/types/schedule.types'
 
 export interface RoundInput {
   type: RoundType

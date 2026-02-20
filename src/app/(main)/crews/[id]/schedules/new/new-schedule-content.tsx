@@ -12,10 +12,6 @@ import {
   AlignLeft,
   Plus,
   Trash2,
-  Dumbbell,
-  Utensils,
-  PartyPopper,
-  MoreHorizontal,
 } from "lucide-react"
 import Link from "next/link"
 import { format } from "date-fns"
@@ -37,25 +33,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { LocationSearch, type Place } from "@/components/location-search"
+import { LocationSearch } from "@/components/location-search"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { getErrorMessage } from "@/lib/utils/get-error-message"
 import { schedulesQueryKey } from "@/hooks/api/schedules/use-schedules-query"
 import { crewSchedulesQueryKey } from "@/hooks/api/crews/use-crew-schedules-query"
-
-type RoundType = "exercise" | "meal" | "afterparty" | "other"
-
-type PlaceInfo = {
-  id: string
-  name: string
-  address: string
-  category?: string
-  phone?: string
-  x: string
-  y: string
-  url?: string
-}
+import { ROUND_TYPE_CONFIG } from "@/lib/constants/round"
+import type { RoundType, PlaceInfo } from "@/types/schedule.types"
 
 type RoundInput = {
   roundNumber: number
@@ -114,14 +99,6 @@ function formatTime(hour: number, minute: number): string {
   return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`
 }
 
-
-const ROUND_TYPE_CONFIG: Record<RoundType, { label: string; icon: typeof Dumbbell; defaultTitle: string }> = {
-  exercise: { label: "운동", icon: Dumbbell, defaultTitle: "운동" },
-  meal: { label: "식사", icon: Utensils, defaultTitle: "식사" },
-  afterparty: { label: "뒷풀이", icon: PartyPopper, defaultTitle: "뒷풀이" },
-  other: { label: "기타", icon: MoreHorizontal, defaultTitle: "" },
-}
-
 function formatTimeDisplay(time: string): string {
   const [hours, minutes] = time.split(":")
   const hour = parseInt(hours, 10)
@@ -137,11 +114,21 @@ function formatTimeDisplay(time: string): string {
 }
 
 export function NewScheduleContent() {
-  const params = useParams()
+  const { id: crewId } = useParams<{ id: string }>()
   const router = useRouter()
   const queryClient = useQueryClient()
 
-  const crewId = params.id as string
+  const mutation = useMutation({
+    mutationFn: (data: CreateScheduleInput) => createSchedule(crewId, data),
+    onError: (error) => {
+      toast.error(getErrorMessage(error), { duration: 4000 })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: schedulesQueryKey() })
+      queryClient.invalidateQueries({ queryKey: crewSchedulesQueryKey(crewId) })
+      router.push(`/crews/${crewId}`)
+    },
+  })
 
   const [title, setTitle] = useState("")
   const [date, setDate] = useState<Date>(new Date())
@@ -158,27 +145,21 @@ export function NewScheduleContent() {
       isUnlimited: true,
     },
   ])
-
   const [editingRound, setEditingRound] = useState<number | null>(0)
   const [isNewRound, setIsNewRound] = useState(false)
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [startHourOpen, setStartHourOpen] = useState(false)
-  const [startMinuteOpen, setStartMinuteOpen] = useState(false)
-  const [endHourOpen, setEndHourOpen] = useState(false)
-  const [endMinuteOpen, setEndMinuteOpen] = useState(false)
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [isStartHourOpen, setIsStartHourOpen] = useState(false)
+  const [isStartMinuteOpen, setIsStartMinuteOpen] = useState(false)
+  const [isEndHourOpen, setIsEndHourOpen] = useState(false)
+  const [isEndMinuteOpen, setIsEndMinuteOpen] = useState(false)
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
 
-  const mutation = useMutation({
-    mutationFn: (data: CreateScheduleInput) => createSchedule(crewId, data),
-    onError: (error) => {
-      toast.error(getErrorMessage(error), { duration: 4000 })
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: schedulesQueryKey() })
-      queryClient.invalidateQueries({ queryKey: crewSchedulesQueryKey(crewId) })
-      router.push(`/crews/${crewId}`)
-    },
-  })
+  const currentRound = editingRound !== null ? rounds[editingRound] : null
+
+  const startHour = currentRound ? parseTime(currentRound.startTime).hour : 19
+  const startMinute = currentRound ? parseTime(currentRound.startTime).minute : 0
+  const endHour = currentRound ? parseTime(currentRound.endTime).hour : 21
+  const endMinute = currentRound ? parseTime(currentRound.endTime).minute : 0
 
   const validation = useMemo(() => {
     const errors: string[] = []
@@ -212,6 +193,24 @@ export function NewScheduleContent() {
       errors,
     }
   }, [title, date, rounds])
+
+  const availableStartHours = useMemo(() => {
+    return HOUR_OPTIONS.filter((h) => h < endHour || (h === endHour && startMinute < endMinute))
+  }, [endHour, endMinute, startMinute])
+
+  const availableStartMinutes = useMemo(() => {
+    if (startHour < endHour) return MINUTE_OPTIONS
+    return MINUTE_OPTIONS.filter((m) => m < endMinute)
+  }, [startHour, endHour, endMinute])
+
+  const availableEndHours = useMemo(() => {
+    return HOUR_OPTIONS.filter((h) => h > startHour || (h === startHour && endMinute > startMinute))
+  }, [startHour, startMinute, endMinute])
+
+  const availableEndMinutes = useMemo(() => {
+    if (endHour > startHour) return MINUTE_OPTIONS
+    return MINUTE_OPTIONS.filter((m) => m > startMinute)
+  }, [endHour, startHour, startMinute])
 
   const handleSubmit = () => {
     setHasAttemptedSubmit(true)
@@ -256,7 +255,7 @@ export function NewScheduleContent() {
     setRounds([...rounds, newRound])
     setEditingRound(rounds.length)
     setIsNewRound(true)
-    setSheetOpen(true)
+    setIsSheetOpen(true)
   }
 
   const removeRound = (index: number) => {
@@ -276,7 +275,7 @@ export function NewScheduleContent() {
   const openRoundEditor = (index: number) => {
     setEditingRound(index)
     setIsNewRound(false)
-    setSheetOpen(true)
+    setIsSheetOpen(true)
   }
 
   const handleSheetClose = (open: boolean) => {
@@ -292,33 +291,8 @@ export function NewScheduleContent() {
       setEditingRound(null)
       setIsNewRound(false)
     }
-    setSheetOpen(open)
+    setIsSheetOpen(open)
   }
-
-  const currentRound = editingRound !== null ? rounds[editingRound] : null
-
-  const startHour = currentRound ? parseTime(currentRound.startTime).hour : 19
-  const startMinute = currentRound ? parseTime(currentRound.startTime).minute : 0
-  const endHour = currentRound ? parseTime(currentRound.endTime).hour : 21
-  const endMinute = currentRound ? parseTime(currentRound.endTime).minute : 0
-
-  const availableStartHours = useMemo(() => {
-    return HOUR_OPTIONS.filter((h) => h < endHour || (h === endHour && startMinute < endMinute))
-  }, [endHour, endMinute, startMinute])
-
-  const availableStartMinutes = useMemo(() => {
-    if (startHour < endHour) return MINUTE_OPTIONS
-    return MINUTE_OPTIONS.filter((m) => m < endMinute)
-  }, [startHour, endHour, endMinute])
-
-  const availableEndHours = useMemo(() => {
-    return HOUR_OPTIONS.filter((h) => h > startHour || (h === startHour && endMinute > startMinute))
-  }, [startHour, startMinute, endMinute])
-
-  const availableEndMinutes = useMemo(() => {
-    if (endHour > startHour) return MINUTE_OPTIONS
-    return MINUTE_OPTIONS.filter((m) => m > startMinute)
-  }, [endHour, startHour, startMinute])
 
   return (
     <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-background">
@@ -494,7 +468,7 @@ export function NewScheduleContent() {
         )}
       </div>
 
-      <Sheet open={sheetOpen} onOpenChange={handleSheetClose}>
+      <Sheet open={isSheetOpen} onOpenChange={handleSheetClose}>
         <SheetContent side="bottom" className="h-auto max-h-[85vh] rounded-t-3xl pb-safe">
           <SheetHeader className="pb-2">
             <SheetTitle className="text-center text-lg">
@@ -576,7 +550,7 @@ export function NewScheduleContent() {
                 </label>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex flex-1 items-center gap-1.5">
-                    <Popover open={startHourOpen} onOpenChange={setStartHourOpen}>
+                    <Popover open={isStartHourOpen} onOpenChange={setIsStartHourOpen}>
                       <PopoverTrigger asChild>
                         <button
                           type="button"
@@ -595,12 +569,12 @@ export function NewScheduleContent() {
                                 tabIndex={0}
                                 onClick={() => {
                                   updateRound(editingRound, { startTime: formatTime(h, startMinute) })
-                                  setStartHourOpen(false)
+                                  setIsStartHourOpen(false)
                                 }}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" || e.key === " ") {
                                     updateRound(editingRound, { startTime: formatTime(h, startMinute) })
-                                    setStartHourOpen(false)
+                                    setIsStartHourOpen(false)
                                   }
                                 }}
                                 className={cn(
@@ -615,7 +589,7 @@ export function NewScheduleContent() {
                         </ScrollArea>
                       </PopoverContent>
                     </Popover>
-                    <Popover open={startMinuteOpen} onOpenChange={setStartMinuteOpen}>
+                    <Popover open={isStartMinuteOpen} onOpenChange={setIsStartMinuteOpen}>
                       <PopoverTrigger asChild>
                         <button
                           type="button"
@@ -634,12 +608,12 @@ export function NewScheduleContent() {
                                 tabIndex={0}
                                 onClick={() => {
                                   updateRound(editingRound, { startTime: formatTime(startHour, m) })
-                                  setStartMinuteOpen(false)
+                                  setIsStartMinuteOpen(false)
                                 }}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" || e.key === " ") {
                                     updateRound(editingRound, { startTime: formatTime(startHour, m) })
-                                    setStartMinuteOpen(false)
+                                    setIsStartMinuteOpen(false)
                                   }
                                 }}
                                 className={cn(
@@ -659,7 +633,7 @@ export function NewScheduleContent() {
                   <span className="text-muted-foreground">~</span>
 
                   <div className="flex flex-1 items-center gap-1.5">
-                    <Popover open={endHourOpen} onOpenChange={setEndHourOpen}>
+                    <Popover open={isEndHourOpen} onOpenChange={setIsEndHourOpen}>
                       <PopoverTrigger asChild>
                         <button
                           type="button"
@@ -678,12 +652,12 @@ export function NewScheduleContent() {
                                 tabIndex={0}
                                 onClick={() => {
                                   updateRound(editingRound, { endTime: formatTime(h, endMinute) })
-                                  setEndHourOpen(false)
+                                  setIsEndHourOpen(false)
                                 }}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" || e.key === " ") {
                                     updateRound(editingRound, { endTime: formatTime(h, endMinute) })
-                                    setEndHourOpen(false)
+                                    setIsEndHourOpen(false)
                                   }
                                 }}
                                 className={cn(
@@ -698,7 +672,7 @@ export function NewScheduleContent() {
                         </ScrollArea>
                       </PopoverContent>
                     </Popover>
-                    <Popover open={endMinuteOpen} onOpenChange={setEndMinuteOpen}>
+                    <Popover open={isEndMinuteOpen} onOpenChange={setIsEndMinuteOpen}>
                       <PopoverTrigger asChild>
                         <button
                           type="button"
@@ -717,12 +691,12 @@ export function NewScheduleContent() {
                                 tabIndex={0}
                                 onClick={() => {
                                   updateRound(editingRound, { endTime: formatTime(endHour, m) })
-                                  setEndMinuteOpen(false)
+                                  setIsEndMinuteOpen(false)
                                 }}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" || e.key === " ") {
                                     updateRound(editingRound, { endTime: formatTime(endHour, m) })
-                                    setEndMinuteOpen(false)
+                                    setIsEndMinuteOpen(false)
                                   }
                                 }}
                                 className={cn(
@@ -799,7 +773,7 @@ export function NewScheduleContent() {
 
               <Button
                 className="w-full rounded-xl py-6 text-base font-semibold"
-                onClick={() => setSheetOpen(false)}
+                onClick={() => setIsSheetOpen(false)}
               >
                 완료
               </Button>

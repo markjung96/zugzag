@@ -1,3 +1,6 @@
+import { db } from "@/lib/db"
+import { crews, crewMembers } from "@/lib/db/schema"
+import { eq, sql, inArray } from "drizzle-orm"
 import { CrewRepository } from "@/lib/repositories/crew.repository"
 import { CrewMemberRepository } from "@/lib/repositories/crew-member.repository"
 import { generateUniqueInviteCode } from "@/lib/utils/generate-invite-code"
@@ -22,21 +25,24 @@ export class CrewService {
    * 크루 생성
    */
   async createCrew(userId: string, data: CreateCrewDto) {
-    // 초대 코드 생성
     const inviteCode = await generateUniqueInviteCode()
 
-    // 크루 생성
-    const crew = await this.crewRepo.create({
-      name: data.name,
-      description: data.description || null,
-      inviteCode,
-      leaderId: userId,
+    return await db.transaction(async (tx) => {
+      const [crew] = await tx.insert(crews).values({
+        name: data.name,
+        description: data.description || null,
+        inviteCode,
+        leaderId: userId,
+      }).returning()
+
+      await tx.insert(crewMembers).values({
+        crewId: crew.id,
+        userId,
+        role: "leader",
+      })
+
+      return crew
     })
-
-    // 크루장을 멤버로 자동 추가
-    await this.memberRepo.addMember(crew.id, userId, "leader")
-
-    return crew
   }
 
   /**
@@ -170,23 +176,30 @@ export class CrewService {
    * 사용자가 속한 크루 목록 조회
    */
   async getUserCrews(userId: string) {
-    const crews = await this.crewRepo.findByUserId(userId)
+    const userCrews = await this.crewRepo.findByUserId(userId)
 
-    // Vercel Guideline: Promise.all()로 병렬 실행
-    const crewsWithCount = await Promise.all(
-      crews.map(async (crew) => {
-        const memberCount = await this.crewRepo.getMemberCount(crew.id)
-        return {
-          id: crew.id,
-          name: crew.name,
-          description: crew.description,
-          role: crew.role,
-          memberCount,
-          isLeader: crew.leaderId === userId,
-        }
+    if (userCrews.length === 0) return []
+
+    // 모든 크루의 멤버 수를 한 번에 조회 (N+1 방지)
+    const crewIds = userCrews.map((c) => c.id)
+    const memberCountRows = await db
+      .select({
+        crewId: crewMembers.crewId,
+        count: sql<number>`count(*)::int`,
       })
-    )
+      .from(crewMembers)
+      .where(inArray(crewMembers.crewId, crewIds))
+      .groupBy(crewMembers.crewId)
 
-    return crewsWithCount
+    const memberCountMap = new Map(memberCountRows.map((r) => [r.crewId, r.count]))
+
+    return userCrews.map((crew) => ({
+      id: crew.id,
+      name: crew.name,
+      description: crew.description,
+      role: crew.role,
+      memberCount: memberCountMap.get(crew.id) ?? 0,
+      isLeader: crew.leaderId === userId,
+    }))
   }
 }
