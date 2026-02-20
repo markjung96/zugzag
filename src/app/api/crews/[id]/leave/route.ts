@@ -14,6 +14,7 @@ import {
   NotFoundError,
   BadRequestError,
 } from "@/lib/errors/app-error"
+import { validateUUID } from "@/lib/utils/validate-uuid"
 
 type RouteParams = {
   params: Promise<{ id: string }>
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id: crewId } = await params
+    validateUUID(crewId, "크루 ID")
     const userId = session.user.id
 
     // 1. crew_members에서 현재 유저의 멤버십 조회

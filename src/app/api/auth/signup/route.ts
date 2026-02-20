@@ -4,21 +4,22 @@ import { db } from "@/lib/db"
 import { users } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcrypt"
+import { authRateLimit } from "@/lib/rate-limit"
+import { checkRateLimit } from "@/lib/utils/check-rate-limit"
 
 const SignupSchema = z.object({
   email: z.string().email("올바른 이메일 형식이 아닙니다"),
   password: z.string().min(8, "비밀번호는 최소 8자 이상이어야 합니다"),
   name: z.string().min(1, "이름을 입력해주세요").max(50, "이름은 50자 이하여야 합니다"),
-  agreedToTerms: z.literal(true, {
-    errorMap: () => ({ message: "이용약관에 동의해주세요" }),
-  }),
-  agreedToPrivacy: z.literal(true, {
-    errorMap: () => ({ message: "개인정보 처리방침에 동의해주세요" }),
-  }),
+  agreedToTerms: z.literal(true, { message: "이용약관에 동의해주세요" }),
+  agreedToPrivacy: z.literal(true, { message: "개인정보 처리방침에 동의해주세요" }),
 })
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResponse = await checkRateLimit(request, authRateLimit)
+    if (rateLimitResponse) return rateLimitResponse
+
     const body = await request.json()
     const parsed = SignupSchema.safeParse(body)
 

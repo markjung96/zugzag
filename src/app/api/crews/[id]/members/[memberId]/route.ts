@@ -11,6 +11,7 @@ import {
   NotFoundError,
   BadRequestError,
 } from "@/lib/errors/app-error"
+import { validateUUID } from "@/lib/utils/validate-uuid"
 
 type RouteContext = {
   params: Promise<{ id: string; memberId: string }>
@@ -33,6 +34,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     }
 
     const { id: crewId, memberId: targetUserId } = await context.params
+    validateUUID(crewId, "크루 ID")
+    validateUUID(targetUserId, "멤버 ID")
     const userId = session.user.id
 
     // 크루 조회 및 크루장 확인
@@ -90,6 +93,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     const { id: crewId, memberId: targetUserId } = await context.params
+    validateUUID(crewId, "크루 ID")
+    validateUUID(targetUserId, "멤버 ID")
     const userId = session.user.id
 
     // 요청 body 파싱 및 검증

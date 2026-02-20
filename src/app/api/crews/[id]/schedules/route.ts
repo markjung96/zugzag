@@ -1,42 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { schedules, scheduleRounds, crews, crewMembers, rsvps } from "@/lib/db/schema";
-import { eq, and, gte, asc, sql } from "drizzle-orm";
+import { eq, and, gte, asc, inArray } from "drizzle-orm";
 import { handleError, UnauthorizedError, ForbiddenError, NotFoundError } from "@/lib/errors/app-error";
 import { isCrewLeaderOrAdmin } from "@/lib/utils/check-crew-permission";
-
-const PlaceInfoDto = z
-  .object({
-    id: z.string(),
-    name: z.string(),
-    address: z.string(),
-    category: z.string().optional(),
-    phone: z.string().optional(),
-    x: z.string(),
-    y: z.string(),
-    url: z.string().optional(),
-  })
-  .optional();
-
-const RoundDto = z.object({
-  roundNumber: z.number().int().min(1).max(5),
-  type: z.enum(["exercise", "meal", "afterparty", "other"]),
-  title: z.string().min(1).max(50),
-  startTime: z.string().regex(/^\d{2}:\d{2}$/, "시작 시간 형식이 올바르지 않습니다"),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/, "종료 시간 형식이 올바르지 않습니다"),
-  location: z.string().min(1).max(255),
-  placeInfo: PlaceInfoDto,
-  capacity: z.number().int().min(0).max(100), // 0 = 무관
-});
-
-const CreateScheduleDto = z.object({
-  title: z.string().min(1, "제목을 입력해주세요").max(100),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "날짜 형식이 올바르지 않습니다"),
-  description: z.string().max(500).optional(),
-  rounds: z.array(RoundDto).min(1, "최소 1개의 일정가 필요합니다").max(5),
-});
+import { validateUUID } from "@/lib/utils/validate-uuid";
+import { mutationRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit } from "@/lib/utils/check-rate-limit";
+import { CreateScheduleDto } from "@/lib/dto/schedule.dto";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -54,6 +26,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     const { id: crewId } = await context.params;
+    validateUUID(crewId, "크루 ID");
     const userId = session.user.id;
 
     // 크루 멤버인지 확인
@@ -76,51 +49,80 @@ export async function GET(request: NextRequest, context: RouteContext) {
       .where(and(eq(schedules.crewId, crewId), gte(schedules.date, today)))
       .orderBy(asc(schedules.date));
 
-    // 각 일정의 일정와 첫 번째 일정의 참석 현황 조회
-    const schedulesWithRounds = await Promise.all(
-      crewSchedules.map(async (schedule) => {
-        // 일정 조회
-        const rounds = await db
-          .select()
-          .from(scheduleRounds)
-          .where(eq(scheduleRounds.scheduleId, schedule.id))
-          .orderBy(asc(scheduleRounds.roundNumber));
+    if (crewSchedules.length === 0) {
+      return NextResponse.json({ schedules: [] });
+    }
 
-        // 첫 번째 일정의 참석 현황
-        const firstRound = rounds[0];
-        let attendingCount = 0;
-        let myStatus: string | null = null;
+    const scheduleIds = crewSchedules.map((s) => s.id);
 
-        if (firstRound) {
-          const [countResult, myRsvp] = await Promise.all([
-            db
-              .select({ count: sql<number>`count(*)::int` })
-              .from(rsvps)
-              .where(and(eq(rsvps.roundId, firstRound.id), eq(rsvps.status, "attending"))),
-            db
-              .select({ status: rsvps.status })
-              .from(rsvps)
-              .where(and(eq(rsvps.roundId, firstRound.id), eq(rsvps.userId, userId)))
-              .limit(1),
-          ]);
-          attendingCount = countResult[0]?.count ?? 0;
-          myStatus = myRsvp[0]?.status === "cancelled" ? null : (myRsvp[0]?.status ?? null);
-        }
+    // 모든 일정의 rounds를 한 번에 조회 (N+1 방지)
+    const allRounds = await db
+      .select()
+      .from(scheduleRounds)
+      .where(inArray(scheduleRounds.scheduleId, scheduleIds))
+      .orderBy(asc(scheduleRounds.roundNumber));
 
-        return {
-          ...schedule,
-          rounds,
-          // 목록에서는 첫 번째 일정 기준 정보 표시
-          startTime: firstRound?.startTime ?? "",
-          endTime: firstRound?.endTime ?? "",
-          location: firstRound?.location ?? "",
-          capacity: firstRound?.capacity ?? 0,
-          attendingCount,
-          myStatus,
-          roundCount: rounds.length,
-        };
-      }),
-    );
+    // scheduleId별 rounds 그룹핑
+    const roundsByScheduleId = new Map<string, typeof allRounds>();
+    for (const round of allRounds) {
+      const existing = roundsByScheduleId.get(round.scheduleId) ?? [];
+      existing.push(round);
+      roundsByScheduleId.set(round.scheduleId, existing);
+    }
+
+    // 각 일정의 첫 번째 round ID 수집
+    const firstRoundIds = crewSchedules
+      .map((s) => roundsByScheduleId.get(s.id)?.[0]?.id)
+      .filter((id): id is string => id !== undefined);
+
+    // 모든 첫 번째 round의 RSVP를 한 번에 조회 (N+1 방지)
+    const allRsvps =
+      firstRoundIds.length > 0
+        ? await db
+            .select({
+              roundId: rsvps.roundId,
+              userId: rsvps.userId,
+              status: rsvps.status,
+            })
+            .from(rsvps)
+            .where(inArray(rsvps.roundId, firstRoundIds))
+        : [];
+
+    // roundId별 RSVPs 그룹핑
+    const rsvpsByRoundId = new Map<string, typeof allRsvps>();
+    for (const rsvp of allRsvps) {
+      const existing = rsvpsByRoundId.get(rsvp.roundId) ?? [];
+      existing.push(rsvp);
+      rsvpsByRoundId.set(rsvp.roundId, existing);
+    }
+
+    const schedulesWithRounds = crewSchedules.map((schedule) => {
+      const rounds = roundsByScheduleId.get(schedule.id) ?? [];
+      const firstRound = rounds[0];
+
+      let attendingCount = 0;
+      let myStatus: string | null = null;
+
+      if (firstRound) {
+        const roundRsvps = rsvpsByRoundId.get(firstRound.id) ?? [];
+        attendingCount = roundRsvps.filter((r) => r.status === "attending").length;
+        const myRsvp = roundRsvps.find((r) => r.userId === userId);
+        myStatus = myRsvp?.status === "cancelled" ? null : (myRsvp?.status ?? null);
+      }
+
+      return {
+        ...schedule,
+        rounds,
+        // 목록에서는 첫 번째 일정 기준 정보 표시
+        startTime: firstRound?.startTime ?? "",
+        endTime: firstRound?.endTime ?? "",
+        location: firstRound?.location ?? "",
+        capacity: firstRound?.capacity ?? 0,
+        attendingCount,
+        myStatus,
+        roundCount: rounds.length,
+      };
+    });
 
     return NextResponse.json({ schedules: schedulesWithRounds });
   } catch (error) {
@@ -134,12 +136,16 @@ export async function GET(request: NextRequest, context: RouteContext) {
  */
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
+    const rateLimitResponse = await checkRateLimit(request, mutationRateLimit);
+    if (rateLimitResponse) return rateLimitResponse;
+
     const session = await auth();
     if (!session?.user?.id) {
       throw new UnauthorizedError();
     }
 
     const { id: crewId } = await context.params;
+    validateUUID(crewId, "크루 ID");
     const userId = session.user.id;
 
     // 크루 존재 여부 확인

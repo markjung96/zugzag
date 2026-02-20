@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
+import { auth } from "@/auth"
+import { mutationRateLimit } from "@/lib/rate-limit"
+import { checkRateLimit } from "@/lib/utils/check-rate-limit"
 
 type KakaoPlace = {
   id: string
@@ -25,6 +28,17 @@ type KakaoSearchResponse = {
 }
 
 export async function GET(request: NextRequest) {
+  const rateLimitResponse = await checkRateLimit(request, mutationRateLimit)
+  if (rateLimitResponse) return rateLimitResponse
+
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "인증이 필요합니다", code: "UNAUTHORIZED" },
+      { status: 401 }
+    )
+  }
+
   const searchParams = request.nextUrl.searchParams
   const query = searchParams.get("query")
   const priorityCategory = searchParams.get("priorityCategory")
@@ -58,7 +72,7 @@ export async function GET(request: NextRequest) {
       console.error("Kakao API error:", errorText)
       return NextResponse.json(
         { error: "장소 검색에 실패했습니다", code: "INTERNAL_ERROR" },
-        { status: response.status }
+        { status: 502 }
       )
     }
 

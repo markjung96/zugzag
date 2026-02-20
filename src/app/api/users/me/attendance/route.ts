@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { crewMembers, crews, schedules, scheduleRounds, rsvps } from "@/lib/db/schema";
-import { eq, and, sql, lte } from "drizzle-orm";
+import { eq, and, sql, lte, inArray } from "drizzle-orm";
 import { handleError, UnauthorizedError } from "@/lib/errors/app-error";
 
 /**
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     const userId = session.user.id;
     const { searchParams } = new URL(request.url);
-    const days = parseInt(searchParams.get("days") || "30", 10);
+    const days = Math.min(Math.max(parseInt(searchParams.get("days") || "30", 10) || 30, 1), 365);
     const crewIdFilter = searchParams.get("crewId");
 
     const today = new Date().toISOString().split("T")[0];
@@ -47,57 +47,87 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const crewIds = crewIdFilter ? [crewIdFilter] : myCrews.map((c) => c.crewId);
+    const filteredCrews = crewIdFilter
+      ? myCrews.filter((c) => c.crewId === crewIdFilter)
+      : myCrews;
 
-    // 크루별 통계 계산 (스케줄당 exercise 일정 중 하나라도 있으면 1회로 카운트)
-    const byCrews = await Promise.all(
-      myCrews
-        .filter((c) => crewIds.includes(c.crewId))
-        .map(async (crew) => {
-          // 해당 크루의 운동 일정 수 (스케줄당 1회만 카운트)
-          const totalExerciseRounds = await db
-            .select({ count: sql<number>`count(distinct ${schedules.id})::int` })
-            .from(scheduleRounds)
-            .innerJoin(schedules, eq(scheduleRounds.scheduleId, schedules.id))
-            .where(
-              and(
-                eq(schedules.crewId, crew.crewId),
-                eq(scheduleRounds.type, "exercise"),
-                lte(schedules.date, today),
-                sql`${schedules.date} >= ${startDateStr}`,
-              ),
-            );
+    if (filteredCrews.length === 0) {
+      return NextResponse.json({
+        totalSchedules: 0,
+        attendedSchedules: 0,
+        attendanceRate: 0,
+        crewStats: [],
+      });
+    }
 
-          // 해당 크루에서 내가 참석한 운동 일정 수 (스케줄당 1회만 카운트)
-          const attendedRounds = await db
-            .select({ count: sql<number>`count(distinct ${schedules.id})::int` })
-            .from(rsvps)
-            .innerJoin(scheduleRounds, eq(rsvps.roundId, scheduleRounds.id))
-            .innerJoin(schedules, eq(scheduleRounds.scheduleId, schedules.id))
-            .where(
-              and(
-                eq(schedules.crewId, crew.crewId),
-                eq(scheduleRounds.type, "exercise"),
-                eq(rsvps.userId, userId),
-                eq(rsvps.status, "attending"),
-                lte(schedules.date, today),
-                sql`${schedules.date} >= ${startDateStr}`,
-              ),
-            );
+    const crewIds = filteredCrews.map((c) => c.crewId);
 
-          const total = totalExerciseRounds[0]?.count ?? 0;
-          const attended = attendedRounds[0]?.count ?? 0;
-          const attendanceRate = total > 0 ? Math.round((attended / total) * 100) / 100 : 0;
+    // 크루별 운동 일정 수를 한 번에 조회 (N+1 방지)
+    const totalRoundsRows = await db
+      .select({
+        crewId: schedules.crewId,
+        scheduleId: schedules.id,
+      })
+      .from(scheduleRounds)
+      .innerJoin(schedules, eq(scheduleRounds.scheduleId, schedules.id))
+      .where(
+        and(
+          inArray(schedules.crewId, crewIds),
+          eq(scheduleRounds.type, "exercise"),
+          lte(schedules.date, today),
+          sql`${schedules.date} >= ${startDateStr}`,
+        ),
+      );
 
-          return {
-            crewId: crew.crewId,
-            crewName: crew.crewName,
-            attended,
-            total,
-            attendanceRate,
-          };
-        }),
-    );
+    // 크루별 고유 scheduleId 집계 (스케줄당 1회 카운트)
+    const totalSchedulesByCrew = new Map<string, Set<string>>();
+    for (const row of totalRoundsRows) {
+      const set = totalSchedulesByCrew.get(row.crewId) ?? new Set<string>();
+      set.add(row.scheduleId);
+      totalSchedulesByCrew.set(row.crewId, set);
+    }
+
+    // 내가 참석한 운동 일정을 한 번에 조회 (N+1 방지)
+    const attendedRows = await db
+      .select({
+        crewId: schedules.crewId,
+        scheduleId: schedules.id,
+      })
+      .from(rsvps)
+      .innerJoin(scheduleRounds, eq(rsvps.roundId, scheduleRounds.id))
+      .innerJoin(schedules, eq(scheduleRounds.scheduleId, schedules.id))
+      .where(
+        and(
+          inArray(schedules.crewId, crewIds),
+          eq(scheduleRounds.type, "exercise"),
+          eq(rsvps.userId, userId),
+          eq(rsvps.status, "attending"),
+          lte(schedules.date, today),
+          sql`${schedules.date} >= ${startDateStr}`,
+        ),
+      );
+
+    // 크루별 고유 출석 scheduleId 집계
+    const attendedSchedulesByCrew = new Map<string, Set<string>>();
+    for (const row of attendedRows) {
+      const set = attendedSchedulesByCrew.get(row.crewId) ?? new Set<string>();
+      set.add(row.scheduleId);
+      attendedSchedulesByCrew.set(row.crewId, set);
+    }
+
+    const byCrews = filteredCrews.map((crew) => {
+      const total = totalSchedulesByCrew.get(crew.crewId)?.size ?? 0;
+      const attended = attendedSchedulesByCrew.get(crew.crewId)?.size ?? 0;
+      const attendanceRate = total > 0 ? Math.round((attended / total) * 100) / 100 : 0;
+
+      return {
+        crewId: crew.crewId,
+        crewName: crew.crewName,
+        attended,
+        total,
+        attendanceRate,
+      };
+    });
 
     // 전체 통계
     const attendedSchedules = byCrews.reduce((sum, c) => sum + c.attended, 0);

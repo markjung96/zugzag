@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { CrewService } from "@/lib/services/crew.service"
 import { handleError, UnauthorizedError } from "@/lib/errors/app-error"
+import { validateUUID } from "@/lib/utils/validate-uuid"
 
 type RouteParams = {
   params: Promise<{ id: string }>
@@ -20,6 +21,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     }
 
     const { id: crewId } = await params
+    validateUUID(crewId, "크루 ID")
 
     // Business logic (Service Layer)
     const service = new CrewService()

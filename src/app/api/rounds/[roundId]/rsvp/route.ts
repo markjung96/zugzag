@@ -4,6 +4,9 @@ import { db, sql } from "@/lib/db";
 import { schedules, scheduleRounds, crewMembers, rsvps } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { handleError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError } from "@/lib/errors/app-error";
+import { mutationRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit } from "@/lib/utils/check-rate-limit";
+import { validateUUID } from "@/lib/utils/validate-uuid";
 
 type RouteContext = {
   params: Promise<{ roundId: string }>;
@@ -15,12 +18,16 @@ type RouteContext = {
  */
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
+    const rateLimitResponse = await checkRateLimit(request, mutationRateLimit);
+    if (rateLimitResponse) return rateLimitResponse;
+
     const session = await auth();
     if (!session?.user?.id) {
       throw new UnauthorizedError();
     }
 
     const { roundId } = await context.params;
+    validateUUID(roundId, "라운드 ID");
     const userId = session.user.id;
 
     // 일정 조회
@@ -193,6 +200,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     }
 
     const { roundId } = await context.params;
+    validateUUID(roundId, "라운드 ID");
     const userId = session.user.id;
 
     // 내 RSVP 조회
@@ -213,22 +221,22 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ success: true, message: "참석 취소되었습니다" });
     }
 
-    // RSVP 삭제 대신 status를 'cancelled'로 업데이트
-    await db.update(rsvps).set({ status: "cancelled" }).where(and(eq(rsvps.roundId, roundId), eq(rsvps.userId, userId)));
+    await db.transaction(async (tx) => {
+      await tx.update(rsvps).set({ status: "cancelled" }).where(and(eq(rsvps.roundId, roundId), eq(rsvps.userId, userId)));
 
-    // 참석 취소 시 대기자 자동 승격
-    if (wasAttending) {
-      const firstWaiting = await db
-        .select()
-        .from(rsvps)
-        .where(and(eq(rsvps.roundId, roundId), eq(rsvps.status, "waiting")))
-        .orderBy(asc(rsvps.createdAt))
-        .limit(1);
+      if (wasAttending) {
+        const firstWaiting = await tx
+          .select()
+          .from(rsvps)
+          .where(and(eq(rsvps.roundId, roundId), eq(rsvps.status, "waiting")))
+          .orderBy(asc(rsvps.createdAt))
+          .limit(1);
 
-      if (firstWaiting.length > 0) {
-        await db.update(rsvps).set({ status: "attending" }).where(eq(rsvps.id, firstWaiting[0].id));
+        if (firstWaiting.length > 0) {
+          await tx.update(rsvps).set({ status: "attending" }).where(eq(rsvps.id, firstWaiting[0].id));
+        }
       }
-    }
+    });
 
     return NextResponse.json({ success: true, message: "참석 취소되었습니다" });
   } catch (error) {

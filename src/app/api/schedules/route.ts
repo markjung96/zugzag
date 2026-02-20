@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { schedules, scheduleRounds, crewMembers, crews, rsvps } from "@/lib/db/schema";
-import { eq, gte, asc, sql, and } from "drizzle-orm";
+import { eq, gte, asc, sql, and, inArray } from "drizzle-orm";
 import { handleError, UnauthorizedError } from "@/lib/errors/app-error";
 
 /**
@@ -41,55 +41,81 @@ export async function GET(request: NextRequest) {
       .where(and(eq(crewMembers.userId, userId), gte(schedules.date, today)))
       .orderBy(asc(schedules.date));
 
-    const userSchedules = limit
-      ? await baseQuery.limit(limit)
-      : await baseQuery;
+    const userSchedules = limit ? await baseQuery.limit(limit) : await baseQuery;
 
-    // 각 일정의 일정와 첫 번째 일정의 참석 현황 조회
-    const schedulesWithRounds = await Promise.all(
-      userSchedules.map(async (schedule) => {
-        // 일정 조회
-        const rounds = await db
-          .select()
-          .from(scheduleRounds)
-          .where(eq(scheduleRounds.scheduleId, schedule.id))
-          .orderBy(asc(scheduleRounds.roundNumber));
+    if (userSchedules.length === 0) {
+      return NextResponse.json({ schedules: [] });
+    }
 
-        // 첫 번째 일정의 참석 현황
-        const firstRound = rounds[0];
-        let attendingCount = 0;
-        let myStatus: string | null = null;
+    const scheduleIds = userSchedules.map((s) => s.id);
 
-        if (firstRound) {
-          const [countResult, myRsvp] = await Promise.all([
-            db
-              .select({ count: sql<number>`count(*)::int` })
-              .from(rsvps)
-              .where(and(eq(rsvps.roundId, firstRound.id), eq(rsvps.status, "attending"))),
-            db
-              .select({ status: rsvps.status })
-              .from(rsvps)
-              .where(and(eq(rsvps.roundId, firstRound.id), eq(rsvps.userId, userId)))
-              .limit(1),
-          ]);
-          attendingCount = countResult[0]?.count ?? 0;
-          myStatus = myRsvp[0]?.status === "cancelled" ? null : (myRsvp[0]?.status ?? null);
-        }
+    // 모든 일정의 rounds를 한 번에 조회 (N+1 방지)
+    const allRounds = await db
+      .select()
+      .from(scheduleRounds)
+      .where(inArray(scheduleRounds.scheduleId, scheduleIds))
+      .orderBy(asc(scheduleRounds.roundNumber));
 
-        return {
-          ...schedule,
-          rounds,
-          // 목록에서는 첫 번째 일정 기준 정보 표시
-          startTime: firstRound?.startTime ?? "",
-          endTime: firstRound?.endTime ?? "",
-          location: firstRound?.location ?? "",
-          capacity: firstRound?.capacity ?? 0,
-          attendingCount,
-          myStatus,
-          roundCount: rounds.length,
-        };
-      }),
-    );
+    // scheduleId별 rounds 그룹핑
+    const roundsByScheduleId = new Map<string, typeof allRounds>();
+    for (const round of allRounds) {
+      const existing = roundsByScheduleId.get(round.scheduleId) ?? [];
+      existing.push(round);
+      roundsByScheduleId.set(round.scheduleId, existing);
+    }
+
+    // 각 일정의 첫 번째 round ID 수집
+    const firstRoundIds = userSchedules
+      .map((s) => roundsByScheduleId.get(s.id)?.[0]?.id)
+      .filter((id): id is string => id !== undefined);
+
+    // 모든 첫 번째 round의 RSVP를 한 번에 조회 (N+1 방지)
+    const allRsvps =
+      firstRoundIds.length > 0
+        ? await db
+            .select({
+              roundId: rsvps.roundId,
+              userId: rsvps.userId,
+              status: rsvps.status,
+            })
+            .from(rsvps)
+            .where(inArray(rsvps.roundId, firstRoundIds))
+        : [];
+
+    // roundId별 RSVPs 그룹핑
+    const rsvpsByRoundId = new Map<string, typeof allRsvps>();
+    for (const rsvp of allRsvps) {
+      const existing = rsvpsByRoundId.get(rsvp.roundId) ?? [];
+      existing.push(rsvp);
+      rsvpsByRoundId.set(rsvp.roundId, existing);
+    }
+
+    const schedulesWithRounds = userSchedules.map((schedule) => {
+      const rounds = roundsByScheduleId.get(schedule.id) ?? [];
+      const firstRound = rounds[0];
+
+      let attendingCount = 0;
+      let myStatus: string | null = null;
+
+      if (firstRound) {
+        const roundRsvps = rsvpsByRoundId.get(firstRound.id) ?? [];
+        attendingCount = roundRsvps.filter((r) => r.status === "attending").length;
+        const myRsvp = roundRsvps.find((r) => r.userId === userId);
+        myStatus = myRsvp?.status === "cancelled" ? null : (myRsvp?.status ?? null);
+      }
+
+      return {
+        ...schedule,
+        rounds,
+        startTime: firstRound?.startTime ?? "",
+        endTime: firstRound?.endTime ?? "",
+        location: firstRound?.location ?? "",
+        capacity: firstRound?.capacity ?? 0,
+        attendingCount,
+        myStatus,
+        roundCount: rounds.length,
+      };
+    });
 
     return NextResponse.json({ schedules: schedulesWithRounds });
   } catch (error) {

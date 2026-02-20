@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { crewMembers, schedules, scheduleRounds, rsvps, users } from "@/lib/db/schema";
-import { eq, and, sql, lte } from "drizzle-orm";
+import { eq, and, sql, lte, inArray } from "drizzle-orm";
 import { handleError, UnauthorizedError, ForbiddenError, NotFoundError } from "@/lib/errors/app-error";
 import { isCrewLeaderOrAdmin } from "@/lib/utils/check-crew-permission";
+import { validateUUID } from "@/lib/utils/validate-uuid";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -24,6 +25,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     const { id: crewId } = await context.params;
+    validateUUID(crewId, "크루 ID");
     const userId = session.user.id;
 
     // 크루장/운영진 권한 확인
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     const { searchParams } = new URL(request.url);
-    const days = parseInt(searchParams.get("days") || "30", 10);
+    const days = Math.min(Math.max(parseInt(searchParams.get("days") || "30", 10) || 30, 1), 365);
 
     const today = new Date().toISOString().split("T")[0];
     const startDate = new Date();
@@ -96,40 +98,53 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const averageAttendanceRate =
       maxPossibleAttendance > 0 ? Math.round((totalAttendance / maxPossibleAttendance) * 100) / 100 : 0;
 
-    // 멤버별 출석 통계 (스케줄당 exercise 일정 중 하나라도 참석하면 1회로 카운트)
-    const memberStats = await Promise.all(
-      members.map(async (member) => {
-        const attendedResult = await db
-          .select({ count: sql<number>`count(distinct ${schedules.id})::int` })
-          .from(rsvps)
-          .innerJoin(scheduleRounds, eq(rsvps.roundId, scheduleRounds.id))
-          .innerJoin(schedules, eq(scheduleRounds.scheduleId, schedules.id))
-          .where(
-            and(
-              eq(schedules.crewId, crewId),
-              eq(scheduleRounds.type, "exercise"),
-              eq(rsvps.userId, member.userId),
-              eq(rsvps.status, "attending"),
-              lte(schedules.date, today),
-              sql`${schedules.date} >= ${startDateStr}`,
-            ),
-          );
+    // 멤버별 출석 통계를 한 번에 조회 (N+1 방지)
+    const memberUserIds = members.map((m) => m.userId);
+    const memberAttendanceRows =
+      memberUserIds.length > 0
+        ? await db
+            .select({
+              userId: rsvps.userId,
+              scheduleId: schedules.id,
+            })
+            .from(rsvps)
+            .innerJoin(scheduleRounds, eq(rsvps.roundId, scheduleRounds.id))
+            .innerJoin(schedules, eq(scheduleRounds.scheduleId, schedules.id))
+            .where(
+              and(
+                eq(schedules.crewId, crewId),
+                eq(scheduleRounds.type, "exercise"),
+                inArray(rsvps.userId, memberUserIds),
+                eq(rsvps.status, "attending"),
+                lte(schedules.date, today),
+                sql`${schedules.date} >= ${startDateStr}`,
+              ),
+            )
+        : [];
 
-        const attended = attendedResult[0]?.count ?? 0;
-        const rate = totalExerciseRounds > 0 ? Math.round((attended / totalExerciseRounds) * 100) / 100 : 0;
+    // userId별 출석한 고유 scheduleId 집계
+    const attendedSchedulesByUser = new Map<string, Set<string>>();
+    for (const row of memberAttendanceRows) {
+      const scheduleSet = attendedSchedulesByUser.get(row.userId) ?? new Set<string>();
+      scheduleSet.add(row.scheduleId);
+      attendedSchedulesByUser.set(row.userId, scheduleSet);
+    }
 
-        return {
-          memberId: member.id,
-          userId: member.userId,
-          name: member.userName,
-          image: member.userImage,
-          role: member.role,
-          attended,
-          total: totalExerciseRounds,
-          rate,
-        };
-      }),
-    );
+    const memberStats = members.map((member) => {
+      const attended = attendedSchedulesByUser.get(member.userId)?.size ?? 0;
+      const rate = totalExerciseRounds > 0 ? Math.round((attended / totalExerciseRounds) * 100) / 100 : 0;
+
+      return {
+        memberId: member.id,
+        userId: member.userId,
+        name: member.userName,
+        image: member.userImage,
+        role: member.role,
+        attended,
+        total: totalExerciseRounds,
+        rate,
+      };
+    });
 
     // 출석률 순으로 정렬
     memberStats.sort((a, b) => b.rate - a.rate);

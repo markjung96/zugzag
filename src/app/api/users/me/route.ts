@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { handleError, UnauthorizedError, BadRequestError } from "@/lib/errors/app-error";
+import { handleError, UnauthorizedError } from "@/lib/errors/app-error";
+
+const UpdateUserDto = z.object({
+  name: z.string().trim().min(1, "이름을 입력해주세요").max(50, "이름은 50자 이내여야 합니다"),
+});
 
 /**
  * 프로필(이름) 수정 API
@@ -19,11 +24,7 @@ export async function PATCH(request: NextRequest) {
 
     const userId = session.user.id;
     const body = await request.json();
-
-    const name = typeof body?.name === "string" ? body.name.trim() : "";
-    if (name.length < 1 || name.length > 50) {
-      throw new BadRequestError("이름은 1~50자 사이여야 합니다");
-    }
+    const { name } = UpdateUserDto.parse(body);
 
     const [updated] = await db
       .update(users)

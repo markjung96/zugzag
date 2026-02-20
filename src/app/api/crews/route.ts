@@ -3,6 +3,8 @@ import { auth } from "@/auth"
 import { CrewService } from "@/lib/services/crew.service"
 import { CreateCrewDto } from "@/lib/dto/crew.dto"
 import { handleError, UnauthorizedError } from "@/lib/errors/app-error"
+import { mutationRateLimit } from "@/lib/rate-limit"
+import { checkRateLimit } from "@/lib/utils/check-rate-limit"
 
 /**
  * 사용자 크루 목록 조회 API
@@ -32,7 +34,9 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Vercel Guideline: 모든 API route 첫 줄에 인증 체크
+    const rateLimitResponse = await checkRateLimit(request, mutationRateLimit)
+    if (rateLimitResponse) return rateLimitResponse
+
     const session = await auth()
     if (!session?.user?.id) {
       throw new UnauthorizedError()
