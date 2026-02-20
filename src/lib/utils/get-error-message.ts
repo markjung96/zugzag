@@ -7,6 +7,8 @@ const ERROR_CODE_MAP: Record<string, string> = {
   BAD_REQUEST: "입력 정보를 확인해주세요",
   INTERNAL_ERROR:
     "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요",
+  RATE_LIMITED:
+    "요청이 너무 많습니다. 잠시 후 다시 시도해주세요",
 }
 
 const NETWORK_ERROR_PATTERNS = [

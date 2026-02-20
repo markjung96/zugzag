@@ -6,6 +6,8 @@ import { db } from "@/lib/db"
 import { users } from "@/lib/db/schema"
 import { eq } from "drizzle-orm"
 import bcrypt from "bcrypt"
+import { authRateLimit } from "@/lib/rate-limit"
+import { getEnv } from "@/lib/utils/get-env"
 
 // Kakao OAuth Profile Type
 interface KakaoProfile {
@@ -45,8 +47,8 @@ const KakaoProvider = {
 export const authConfig: NextAuthConfig = {
   providers: [
     Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: getEnv("GOOGLE_CLIENT_ID"),
+      clientSecret: getEnv("GOOGLE_CLIENT_SECRET"),
     }),
     KakaoProvider,
     Credentials({
@@ -58,6 +60,12 @@ export const authConfig: NextAuthConfig = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null
+        }
+
+        const email = credentials.email as string
+        if (authRateLimit) {
+          const { success } = await authRateLimit.limit(email)
+          if (!success) return null
         }
 
         try {
@@ -93,6 +101,10 @@ export const authConfig: NextAuthConfig = {
       },
     }),
   ],
+  session: {
+    strategy: "jwt",
+    maxAge: 7 * 24 * 60 * 60,
+  },
   pages: {
     signIn: "/login",
   },
